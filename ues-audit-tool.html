@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keysight UES — Audit Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ── Keysight Brand ──────────────────────────────────────────
+   Red #E90029 · Dark Red #871518 · Black #000000
+   Dark Gray #373A36 · Mid Gray #97999B
+   Gray #D9D9D6 · Light Gray #EBEBEB · White #FFFFFF
+───────────────────────────────────────────────────────────── */
+:root {
+  --red:#E90029; --red-dark:#871518; --red-dim:rgba(233,0,41,0.07); --red-border:rgba(233,0,41,0.22);
+  --black:#000000; --dark-gray:#373A36; --mid-gray:#97999B; --gray:#D9D9D6; --light-gray:#EBEBEB; --white:#FFFFFF;
+  --bg:#F2F2F0; --border:#D9D9D6; --text:#000000; --text-mid:#373A36; --text-dim:#97999B;
+  --score-green:#22c55e; --score-amber:#f59e0b; --score-red:#ef4444;
+  --font:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ── Chrome ── */
+.sticky-chrome{position:sticky;top:0;z-index:100;}
+.header-accent{height:3px;background:var(--red);}
+.site-header{background:var(--white);border-bottom:1px solid var(--light-gray);display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:58px;}
+.header-divider{width:1px;height:18px;background:var(--gray);margin:0 14px;}
+.header-label{font-size:11px;font-weight:500;color:var(--mid-gray);letter-spacing:0.05em;text-transform:uppercase;}
+
+/* ── Mode toggle ── */
+.mode-bar{background:var(--white);border-bottom:1px solid var(--light-gray);display:flex;justify-content:center;padding:0;}
+.mode-toggle{display:inline-flex;border:1px solid var(--border);margin:12px 0;}
+.mode-btn{font-family:var(--font);font-size:12px;font-weight:600;padding:9px 28px;border:none;background:var(--white);color:var(--text-dim);cursor:pointer;transition:all 0.15s;letter-spacing:0.02em;border-right:1px solid var(--border);}
+.mode-btn:last-child{border-right:none;}
+.mode-btn.active{background:var(--red);color:var(--white);}
+.mode-btn:not(.active):hover{background:var(--light-gray);color:var(--text-mid);}
+
+/* ── Shared shell ── */
+.shell{max-width:800px;margin:0 auto;padding:36px 24px 100px;}
+.page-hero{margin-bottom:32px;}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:10px;display:block;}
+.page-hero h1{font-size:clamp(20px,3vw,28px);font-weight:700;color:var(--black);letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px;}
+.page-hero p{font-size:14px;color:var(--text-mid);line-height:1.65;max-width:520px;}
+
+/* ── Progress ── */
+.progress-wrap{margin-bottom:30px;}
+.progress-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.progress-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
+.progress-count{font-size:12px;font-weight:600;color:var(--red);}
+.progress-track{height:2px;background:var(--light-gray);overflow:hidden;}
+.progress-fill{height:100%;background:var(--red);transition:width 0.35s cubic-bezier(0.4,0,0.2,1);}
+.step-dots{display:flex;gap:5px;margin-top:10px;}
+.step-dot{width:6px;height:6px;border-radius:50%;background:var(--gray);transition:all 0.25s;cursor:pointer;}
+.step-dot.done{background:var(--dark-gray);}
+.step-dot.active{background:var(--red);transform:scale(1.6);}
+
+/* ── Step cards ── */
+.step-card{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--red);padding:30px;display:none;animation:fadeUp 0.22s ease;}
+.step-card.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.step-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--light-gray);}
+.step-badge{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);background:var(--red-dim);border:1px solid var(--red-border);padding:4px 8px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.step-title{font-size:17px;font-weight:700;color:var(--black);letter-spacing:-0.01em;line-height:1.2;}
+.step-desc{font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
+
+/* ── Fields ── */
+.field-group{margin-bottom:20px;}
+.field-label{display:block;font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-mid);margin-bottom:7px;}
+.req{color:var(--red);margin-left:2px;}
+.opt-label{font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;font-size:11px;}
+.field-hint{font-size:12px;color:var(--text-dim);margin-top:5px;line-height:1.4;}
+input[type="text"],input[type="url"],select,textarea{width:100%;background:var(--white);border:1px solid var(--border);border-radius:0;color:var(--text);font-family:var(--font);font-size:14px;padding:10px 13px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(233,0,41,0.1);}
+textarea{resize:vertical;min-height:90px;line-height:1.6;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%2397999B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;cursor:pointer;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:520px){.row-2{grid-template-columns:1fr;}}
+.section-rule{border:none;border-top:1px solid var(--light-gray);margin:20px 0;}
+
+/* ── Tab toggle (URL/Screenshot) ── */
+.toggle-tabs{display:flex;border:1px solid var(--border);margin-bottom:18px;}
+.toggle-tab{flex:1;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-mid);background:var(--bg);border:none;cursor:pointer;transition:all 0.13s;text-align:center;font-family:var(--font);border-right:1px solid var(--border);}
+.toggle-tab:last-child{border-right:none;}
+.toggle-tab.active{background:var(--red);color:var(--white);font-weight:600;}
+.toggle-panel{display:none;}
+.toggle-panel.active{display:block;}
+
+/* ── Pills ── */
+.pill-group{display:flex;flex-wrap:wrap;gap:7px;}
+.pill{font-size:12px;font-weight:500;padding:6px 13px;border:1px solid var(--border);background:var(--white);color:var(--text-mid);cursor:pointer;transition:all 0.13s;user-select:none;}
+.pill:hover{border-color:var(--red);color:var(--black);}
+.pill.on{background:var(--red);border-color:var(--red);color:var(--white);font-weight:600;}
+
+/* ── Checkboxes ── */
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;}
+.check-item{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:all 0.13s;user-select:none;font-size:13px;color:var(--text-mid);}
+.check-item:hover{border-color:var(--dark-gray);color:var(--black);}
+.check-item.on{border-color:var(--dark-gray);color:var(--black);background:var(--light-gray);}
+.chkbox{width:14px;height:14px;border:1.5px solid var(--mid-gray);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all 0.13s;}
+.check-item.on .chkbox{background:var(--dark-gray);border-color:var(--dark-gray);color:var(--white);}
+
+/* ── Notice ── */
+.notice{background:rgba(135,21,24,0.05);border-left:3px solid var(--red-dark);padding:11px 15px;font-size:13px;color:var(--text-mid);line-height:1.55;margin-bottom:20px;display:flex;gap:9px;}
+.notice b{color:var(--red-dark);font-weight:700;font-size:13px;flex-shrink:0;}
+
+/* ── Upload ── */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:520px){.upload-grid{grid-template-columns:1fr;}}
+.upload-zone{background:var(--bg);border:1.5px dashed var(--border);padding:22px 18px 18px;text-align:center;cursor:pointer;transition:all 0.13s;user-select:none;}
+.upload-zone:hover{border-color:var(--red);background:var(--red-dim);}
+.upload-zone.has-files{border-color:var(--dark-gray);background:var(--light-gray);border-style:solid;}
+.upload-icon{font-size:24px;margin-bottom:8px;}
+.upload-title{font-size:13px;font-weight:600;color:var(--black);margin-bottom:4px;}
+.upload-sub{font-size:11px;color:var(--text-dim);line-height:1.4;}
+.upload-badge{display:inline-block;margin-top:10px;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 8px;}
+.badge-req{background:var(--red);color:var(--white);}
+.badge-opt{background:var(--dark-gray);color:var(--white);}
+.preview-strip{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.preview-item{position:relative;border:1px solid var(--border);background:var(--white);}
+.preview-item img{display:block;height:68px;width:auto;max-width:120px;object-fit:cover;}
+.preview-pdf{height:68px;width:80px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-dim);}
+.preview-name{font-size:10px;font-weight:500;color:var(--text-dim);padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+.remove-btn{position:absolute;top:3px;right:3px;background:var(--dark-gray);color:var(--white);border:none;width:15px;height:15px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.remove-btn:hover{background:var(--red);}
+
+/* ── Nav ── */
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--light-gray);}
+.btn{font-family:var(--font);font-size:13px;font-weight:600;padding:10px 24px;border:none;cursor:pointer;transition:all 0.13s;letter-spacing:0.01em;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-mid);}
+.btn-ghost:hover{border-color:var(--dark-gray);color:var(--black);}
+.btn-red{background:var(--red);color:var(--white);}
+.btn-red:hover{background:var(--red-dark);}
+.btn-dark{background:var(--dark-gray);color:var(--white);}
+.btn-dark:hover{background:var(--black);}
+
+/* ── Output ── */
+.output-box{user-select:text;-webkit-user-select:text;cursor:text;background:var(--dark-gray);padding:22px 24px;font-family:'Courier New',Courier,monospace;font-size:11.5px;line-height:1.75;color:var(--light-gray);white-space:pre-wrap;word-break:break-word;max-height:460px;overflow-y:auto;margin-bottom:18px;}
+.output-box::-webkit-scrollbar{width:4px;}.output-box::-webkit-scrollbar-track{background:var(--black);}.output-box::-webkit-scrollbar-thumb{background:var(--mid-gray);}
+.copy-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.copy-feedback{font-size:12px;font-weight:500;color:var(--dark-gray);opacity:0;transition:opacity 0.3s;}
+.copy-feedback.show{opacity:1;}
+.ss-notice{background:var(--light-gray);border-left:3px solid var(--dark-gray);padding:10px 14px;font-size:12px;font-weight:500;color:var(--dark-gray);margin-bottom:14px;}
+.restart-row{display:flex;justify-content:center;margin-top:28px;}
+.btn-restart{font-family:var(--font);font-size:12px;font-weight:500;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:8px 20px;cursor:pointer;transition:all 0.13s;}
+.btn-restart:hover{color:var(--black);border-color:var(--dark-gray);}
+
+/* ════════════════════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════════════════════ */
+#dashboard-view{display:none;}
+.db-shell{max-width:960px;margin:0 auto;padding:28px 24px 80px;}
+
+/* Paste screen */
+.db-steps{display:flex;gap:8px;margin-bottom:24px;}
+.db-step{flex:1;display:flex;align-items:center;gap:9px;padding:11px 12px;background:var(--white);border:1px solid var(--border);}
+.db-step-num{width:20px;height:20px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.db-step-num span{font-size:10px;font-weight:800;color:var(--white);}
+.db-step-text{font-size:11px;color:var(--text-mid);line-height:1.4;}
+.db-textarea{width:100%;height:240px;background:var(--white);border:1px solid var(--border);color:var(--text);font-family:'Courier New',Courier,monospace;font-size:12px;padding:14px;resize:vertical;outline:none;line-height:1.6;transition:border-color 0.15s;border-radius:0;}
+.db-textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(233,0,41,0.1);}
+.db-textarea.has-error{border-color:var(--score-red);}
+.db-error{font-size:11px;color:var(--score-red);margin-top:6px;white-space:pre-line;line-height:1.6;background:rgba(239,68,68,0.06);border-left:3px solid var(--score-red);padding:10px 12px;}
+.db-load-btn{margin-top:12px;width:100%;padding:13px;background:var(--red);color:var(--white);border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background 0.13s;}
+.db-load-btn:hover{background:var(--red-dark);}
+.db-load-btn:disabled{background:var(--gray);color:var(--mid-gray);cursor:default;}
+.db-sample-link{font-size:11px;color:var(--text-dim);text-align:center;margin-top:14px;}
+.db-sample-link span{color:var(--red);cursor:pointer;text-decoration:underline;}
+
+/* Dashboard header */
+.db-header{background:var(--white);border-bottom:1px solid var(--border);padding:18px 32px;}
+.db-header-inner{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;}
+.db-page-type-label{font-size:18px;font-weight:700;color:var(--black);letter-spacing:-0.01em;margin-bottom:2px;}
+.db-page-url-label{font-size:11px;color:var(--text-dim);}
+.db-meta-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.db-tag{font-size:10px;padding:3px 9px;background:var(--bg);border:1px solid var(--border);color:var(--text-dim);}
+.db-reset-btn{font-family:var(--font);font-size:11px;padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all 0.13s;}
+.db-reset-btn:hover{border-color:var(--dark-gray);color:var(--black);}
+.db-export-btn{font-family:var(--font);font-size:11px;font-weight:600;padding:4px 12px;background:var(--dark-gray);color:var(--white);border:none;cursor:pointer;transition:all 0.13s;}
+.db-export-btn:hover{background:var(--black);}
+.db-export-btn:disabled{background:var(--mid-gray);cursor:default;}
+
+/* Dashboard tabs */
+.db-tabs{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;overflow-x:auto;}
+.db-tabs-inner{max-width:960px;margin:0 auto;display:flex;}
+.db-tab{padding:13px 15px;font-size:12px;font-weight:600;border:none;background:transparent;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;font-family:var(--font);transition:all 0.13s;white-space:nowrap;}
+.db-tab.active{color:var(--red);border-bottom-color:var(--red);}
+.db-tab:not(.active):hover{color:var(--text-mid);}
+
+/* Ring cards */
+.ring-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.ring-card{text-align:center;padding:22px 16px 18px;background:var(--white);border:1px solid var(--border);}
+.ring-label{font-size:11px;font-weight:700;color:var(--text-mid);margin-top:10px;}
+.ring-sub{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.ring-score{font-size:22px;font-weight:700;font-family:'Courier New',monospace;}
+
+/* Score bars */
+.score-bar-row{margin-bottom:8px;}
+.score-bar-header{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--white);border:1px solid var(--border);cursor:pointer;transition:background 0.13s;}
+.score-bar-header:hover{background:var(--light-gray);}
+.score-bar-name{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:6px;}
+.score-bar-track{height:2px;background:var(--light-gray);}
+.score-bar-fill{height:100%;}
+.score-bar-meta{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.score-bar-weight{font-size:10px;color:var(--text-dim);}
+.score-bar-num{font-size:13px;font-weight:700;font-family:'Courier New',monospace;}
+.score-bar-badge{font-size:10px;padding:2px 7px;font-weight:700;}
+.score-bar-arrow{font-size:9px;color:var(--text-dim);margin-left:4px;}
+.score-bar-body{padding:12px 13px;background:var(--bg);border:1px solid var(--border);border-top:none;font-size:12px;color:var(--text-mid);line-height:1.7;}
+.db-section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:16px;}
+
+/* Overview */
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mini-row{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--white);border:1px solid var(--border);}
+.mini-label{font-size:11px;color:var(--text-dim);flex:1;min-width:120px;}
+.mini-track{height:2px;background:var(--light-gray);flex:2;}
+.mini-fill{height:100%;}
+.mini-score{font-size:12px;font-weight:700;font-family:'Courier New',monospace;min-width:28px;text-align:right;}
+.db-classification{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--red);padding:16px 18px;margin-bottom:20px;font-size:13px;color:var(--text-mid);line-height:1.7;}
+.db-classification-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:8px;}
+
+/* USPs */
+.usp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px;}
+.usp-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--white);border:1px solid var(--border);}
+.usp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.usp-name{flex:1;font-size:12px;color:var(--text-mid);}
+.usp-status{font-size:10px;font-weight:700;padding:2px 8px;text-transform:capitalize;}
+.usp-explicit .usp-dot{background:var(--score-green);} .usp-explicit .usp-status{background:rgba(34,197,94,0.1);color:var(--score-green);} .usp-explicit{border-color:rgba(34,197,94,0.3);}
+.usp-implied .usp-dot{background:var(--score-amber);} .usp-implied .usp-status{background:rgba(245,158,11,0.1);color:var(--score-amber);} .usp-implied{border-color:rgba(245,158,11,0.3);}
+.usp-missing .usp-dot{background:var(--score-red);} .usp-missing .usp-status{background:rgba(239,68,68,0.1);color:var(--score-red);} .usp-missing{border-color:rgba(239,68,68,0.25);}
+.usp-legend{display:flex;gap:20px;}
+.usp-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);}
+
+/* Risks / Opps */
+.risk-opp-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.ro-section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;}
+.risk-item,.opp-item{padding:12px 13px;background:var(--white);border:1px solid var(--border);border-left:3px solid;margin-bottom:7px;}
+.risk-item{border-left-color:var(--score-red);}
+.opp-item{border-left-color:var(--score-green);}
+.ro-rank{font-size:11px;font-weight:800;font-family:'Courier New',monospace;margin-bottom:4px;}
+.ro-text{font-size:12px;font-weight:600;color:var(--black);margin-bottom:3px;}
+.ro-sub{font-size:11px;color:var(--text-dim);line-height:1.5;}
+
+/* Rewrites */
+.rewrite-card{background:var(--white);border:1px solid var(--border);padding:16px;margin-bottom:10px;}
+.rewrite-label{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
+.rewrite-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.rewrite-side{padding:11px;background:var(--bg);}
+.rewrite-current{border-left:3px solid var(--score-red);}
+.rewrite-suggested{border-left:3px solid var(--score-green);}
+.rewrite-side-label{font-size:9px;font-weight:700;letter-spacing:0.08em;margin-bottom:5px;}
+.rewrite-text{font-size:12px;color:var(--text-mid);line-height:1.5;}
+.rewrite-text.strong{color:var(--black);font-weight:500;}
+.rewrite-rationale{font-size:11px;color:var(--text-dim);line-height:1.6;}
+.faq-item{padding-bottom:13px;margin-bottom:13px;border-bottom:1px solid var(--light-gray);}
+.faq-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.faq-q{font-size:12px;font-weight:600;color:var(--black);margin-bottom:4px;}
+.faq-a{font-size:11px;color:var(--text-dim);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<!-- Chrome -->
+<div class="sticky-chrome">
+<div class="header-accent"></div>
+<div class="site-header">
+  <div style="display:flex;align-items:center;">
+    <svg height="20" viewBox="0 0 197.004 35" width="112" xmlns="http://www.w3.org/2000/svg">
+      <path d="m62.467 39.925c-.347 0-1.119-.437-1.645-2.507-.851-3.358-1.287-6.134-2.731-6.134s-2.149 2.821-3.033 6.145c-.5 1.959-1.052 2.507-1.914 2.507s-1.645-.392-2.9-5.518c-1.12-4.478-1.836-12.548-5.474-12.548s-4.724 10.555-5.194 12.592c-.571 2.5-1.97 5.462-3.772 5.462s-2.731-2.071-3.28-4.309c-.828-3.358-1.769-8.328-4.153-8.328s-3.168 4.074-4.22 8.563c-.627 2.63-1.556 4.074-3.358 4.074h-3.793a3.212 3.212 0 0 1 1.757 2.541c.593 3.75 1.052 6.1 2.384 6.1s1.8-1.925 2.574-5.082c.56-2.44 1.489-3.559 2.586-3.559 1.645 0 2.384 1.959 3.291 5.753 1.757 7.5 2.149 11.193 5 11.193s3.28-3.638 5.16-11.193c.817-3.246 2.384-5.753 4.186-5.753s3.078 2.384 3.75 4.3c1.41 4.153 2.071 5.709 3.638 5.709s2.463-1.869 3.828-6.414c.862-2.8 1.019-3.593 3.559-3.593z" fill="#e90029" transform="translate(-17 -21.87)"/>
+      <path d="m77.884 49.446-9.66-11.1v11.1h-3.794v-22.756h3.794v9.9l8.955-9.9h4.847l-9.85 10.757 10.712 12z" transform="translate(-11.341 -21.295)"/>
+      <path d="m96 26.69v3.638h-9.646v5.35h8.6v3.638h-8.6v6.492h9.646v3.638h-13.44v-22.756z" transform="translate(-9.178 -21.295)"/>
+      <path d="m100.412 26.69 5.742 9.033 5.675-9.033h4.41l-8.249 12.861v9.9h-3.783v-9.9l-8.407-12.861z" transform="translate(-7.598 -21.295)"/>
+      <path d="m114.1 42.125h3.75c0 2.429 1.959 4.108 4.69 4.108s4.377-1.287 4.377-3.212c0-5.115-12.548-1.836-12.548-10.163 0-3.75 3.246-6.447 7.7-6.447 5.238 0 7.9 3.358 7.9 7.152h-3.906c-.076-2.027-1.643-3.563-4.15-3.563-2.306 0-3.828 1.119-3.828 2.776 0 4.735 12.592 1.41 12.592 10.208 0 3.951-3.481 6.805-8.171 6.805s-8.406-3.209-8.406-7.664" transform="translate(-5.414 -21.328)"/>
+      <path d="m130.97 26.69h3.795v22.756h-3.795z" transform="translate(-3.401 -21.295)"/>
+      <path d="m158.9 38.883a10.645 10.645 0 0 1 -11.054 10.917 11.4 11.4 0 0 1 -11.5-11.73 11.35 11.35 0 0 1 11.5-11.686c5.115 0 9.727 3.47 10.555 7.466h-4.309c-.851-2.239-3.548-3.761-6.246-3.761a7.6 7.6 0 0 0 -7.546 7.981 7.69 7.69 0 0 0 7.835 8.014 6.85 6.85 0 0 0 6.917-5.709h-7.108v-3.675h10.826a12.133 12.133 0 0 1 .157 2.183" transform="translate(-2.76 -21.332)"/>
+      <path d="m177.174 26.69v22.756h-3.794v-9.973h-11.026v9.973h-3.794v-22.756h3.794v9.11h11.026v-9.11z" transform="translate(-.109 -21.295)"/>
+      <path d="m194.9 30.328h-7v19.118h-3.794v-19.118h-7v-3.638h17.794z" transform="translate(2.104 -21.295)"/>
+    </svg>
+    <div class="header-divider"></div>
+    <span class="header-label">Used Equipment Store</span>
+  </div>
+</div>
+
+<!-- Mode toggle -->
+<div class="mode-bar">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-builder" onclick="setMode('builder')">⚙&nbsp; Audit Prompt Builder</button>
+    <button class="mode-btn" id="btn-dashboard" onclick="setMode('dashboard')">▦&nbsp; Audit Dashboard</button>
+  </div>
+</div>
+</div><!-- /sticky-chrome -->
+
+
+<!-- ════════════════════════════════════════════════════════
+     BUILDER VIEW
+════════════════════════════════════════════════════════ -->
+<div id="builder-view">
+<div class="shell">
+  <div class="page-hero">
+    <span class="eyebrow">Prompt Builder · v3.0</span>
+    <h1>Audit Prompt Builder</h1>
+    <p>Complete each step to generate your tailored audit prompt. Copy the result and paste it — along with your full page content — into any LLM.</p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span class="progress-label">Progress</span>
+      <span class="progress-count" id="prog-count">Step 1 of 6</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:16.66%"></div></div>
+    <div class="step-dots" id="step-dots"></div>
+  </div>
+
+  <!-- ── Step 1: Page Identification ── -->
+  <div class="step-card active" id="step-1">
+    <div class="step-header">
+      <div class="step-badge">01 / 06</div>
+      <div><div class="step-title">Page Identification</div><div class="step-desc">Provide either the page URL or upload screenshots. At least one is required.</div></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">How will you provide the page? <span class="req">*</span></label>
+      <div class="toggle-tabs">
+        <button class="toggle-tab active" id="tab-url" onclick="switchTab('url')">Page URL</button>
+        <button class="toggle-tab" id="tab-screenshot" onclick="switchTab('screenshot')">Upload Screenshots</button>
+      </div>
+      <div class="toggle-panel active" id="panel-url">
+        <div class="notice"><b>!</b><span>Only provide a URL if your LLM supports web-fetch. Otherwise, paste the full rendered page text (browser Reader Mode recommended to strip navigation/footer) alongside the generated prompt.</span></div>
+        <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" />
+        <div class="field-hint">The full page text must accompany this prompt for the LLM to perform the audit.</div>
+      </div>
+      <div class="toggle-panel" id="panel-screenshot">
+        <div class="notice"><b>ℹ</b><span>Attach these files alongside the prompt when submitting to your LLM — they enable direct assessment of visual UX, layout, and responsiveness.</span></div>
+        <div class="upload-grid">
+          <div class="upload-zone" id="desktop-zone" onclick="document.getElementById('desktop-input').click()">
+            <input type="file" id="desktop-input" accept="image/*,.pdf" multiple style="display:none" onchange="handleUpload(event,'desktop')" />
+            <div class="upload-icon">🖥</div><div class="upload-title">Desktop</div>
+            <div class="upload-sub">PNG, JPG or PDF · Click or drag</div>
+            <div class="upload-badge badge-req">Required</div>
+          </div>
+          <div class="upload-zone" id="mobile-zone" onclick="document.getElementById('mobile-input').click()">
+            <input type="file" id="mobile-input" accept="image/*,.pdf" multiple style="display:none" onchange="handleUpload(event,'mobile')" />
+            <div class="upload-icon">📱</div><div class="upload-title">Mobile</div>
+            <div class="upload-sub">PNG, JPG or PDF · Click or drag</div>
+            <div class="upload-badge badge-opt">Recommended</div>
+          </div>
+        </div>
+        <div id="desktop-previews" class="preview-strip"></div>
+        <div id="mobile-previews" class="preview-strip"></div>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Page Type <span class="req">*</span></label>
+      <select id="page-type" onchange="toggleCustom('page-type','custom-pt-wrap')">
+        <option value="">— Select page type —</option>
+        <option value="Campaign Landing Page">Campaign Landing Page</option>
+        <option value="SEO Category Page">SEO Category Page</option>
+        <option value="Product Detail Page">Product Detail Page</option>
+        <option value="Homepage">Homepage</option>
+        <option value="Blog / Editorial Page">Blog / Editorial Page</option>
+        <option value="Comparison Page">Comparison Page</option>
+        <option value="custom">Custom (specify below)</option>
+      </select>
+    </div>
+    <div class="field-group" id="custom-pt-wrap" style="display:none">
+      <label class="field-label">Custom Page Type</label>
+      <input type="text" id="page-type-custom" placeholder="Describe the page type…" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Primary Page Goal <span class="req">*</span></label>
+      <select id="page-goal-select" onchange="toggleCustom('page-goal-select','custom-goal-wrap')">
+        <option value="">— Select a goal —</option>
+        <option value="Match campaign promise, reduce friction, drive conversion">Match campaign promise, reduce friction, drive conversion</option>
+        <option value="Drive organic traffic and capture inbound leads">Drive organic traffic and capture inbound leads</option>
+        <option value="Educate and build awareness">Educate and build awareness</option>
+        <option value="Generate quote requests or direct sales">Generate quote requests or direct sales</option>
+        <option value="Support procurement decision-making">Support procurement decision-making</option>
+        <option value="custom">Custom (specify below)</option>
+      </select>
+    </div>
+    <div class="field-group" id="custom-goal-wrap" style="display:none">
+      <label class="field-label">Custom Goal</label>
+      <input type="text" id="page-goal-custom" placeholder="Describe the primary page goal…" />
+    </div>
+    <div class="nav-row"><span></span><button class="btn btn-red" onclick="goTo(2)">Next →</button></div>
+  </div>
+
+  <!-- ── Step 2: Audience ── -->
+  <div class="step-card" id="step-2">
+    <div class="step-header">
+      <div class="step-badge">02 / 06</div>
+      <div><div class="step-title">Audience</div><div class="step-desc">Define who this page is built for. Select all that apply.</div></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Primary Audience <span class="req">*</span></label>
+      <div class="pill-group" id="primary-audience-pills">
+        <div class="pill pill-all" onclick="toggleAllPill(this,'primary-audience-pills')">All Roles</div>
+        <div class="pill" onclick="togglePill(this)">R&amp;D Engineers</div>
+        <div class="pill" onclick="togglePill(this)">Test Engineers</div>
+        <div class="pill" onclick="togglePill(this)">QA Managers</div>
+        <div class="pill" onclick="togglePill(this)">Lab Managers</div>
+        <div class="pill" onclick="togglePill(this)">Procurement</div>
+        <div class="pill" onclick="togglePill(this)">Purchasing</div>
+        <div class="pill" onclick="togglePill(this)">Program Managers</div>
+      </div>
+      <input type="text" id="primary-audience-custom" placeholder="Add a custom role…" style="margin-top:10px" />
+      <div class="field-hint">Select one or more. Custom value appended if filled.</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Industry <span class="req">*</span></label>
+      <div class="pill-group" id="industry-pills">
+        <div class="pill" onclick="togglePill(this)">All Industries</div>
+        <div class="pill" onclick="togglePill(this)">Aerospace &amp; Defense</div>
+        <div class="pill" onclick="togglePill(this)">Automotive</div>
+        <div class="pill" onclick="togglePill(this)">Semiconductor</div>
+        <div class="pill" onclick="togglePill(this)">5G / Wireless</div>
+        <div class="pill" onclick="togglePill(this)">General Electronics</div>
+      </div>
+      <input type="text" id="industry-custom" placeholder="Add a custom industry…" style="margin-top:10px" />
+      <div class="field-hint">Select one or more. Custom value appended if filled.</div>
+    </div>
+    <hr class="section-rule">
+    <div class="field-group">
+      <label class="field-label">Secondary Audience <span class="opt-label">(optional — leave blank to exclude)</span></label>
+      <input type="text" id="secondary-audience" placeholder="e.g. Program managers in Aerospace Defense, Procurement" />
+      <div class="field-hint">If blank, the secondary audience dimension will be omitted from the prompt.</div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(3)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Journey Stage & Traffic ── -->
+  <div class="step-card" id="step-3">
+    <div class="step-header">
+      <div class="step-badge">03 / 06</div>
+      <div><div class="step-title">Customer Journey Stage &amp; Traffic</div><div class="step-desc">Calibrate the audit's strategic expectations.</div></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Customer Journey Stage <span class="req">*</span></label>
+      <div class="pill-group" id="phase-pills">
+        <div class="pill" onclick="togglePill(this)">Awareness</div>
+        <div class="pill" onclick="togglePill(this)">Consideration</div>
+        <div class="pill" onclick="togglePill(this)">Purchase</div>
+        <div class="pill" onclick="togglePill(this)">Retention</div>
+      </div>
+      <div class="field-hint" style="margin-top:8px">Select one or more. Awareness = educate &amp; build trust · Consideration = compare &amp; qualify · Purchase = remove friction &amp; close · Retention = reinforce &amp; reorder</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Primary Traffic Source <span class="req">*</span></label>
+      <div class="pill-group" id="traffic-pills">
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">LinkedIn Campaign</div>
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">Google Ads</div>
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">Organic Search (SEO)</div>
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">Email / Newsletter</div>
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">Trade Show / Event</div>
+        <div class="pill" onclick="singlePill(this,'traffic-pills')">Direct / Referral</div>
+      </div>
+      <input type="text" id="traffic-custom" placeholder="Or describe a custom traffic source…" style="margin-top:10px" />
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(4)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 4: USPs ── -->
+  <div class="step-card" id="step-4">
+    <div class="step-header">
+      <div class="step-badge">04 / 06</div>
+      <div><div class="step-title">USPs to Evaluate</div><div class="step-desc">All USPs are pre-selected. Deselect any not relevant to this page.</div></div>
+    </div>
+    <div class="check-grid" id="usp-list" style="grid-template-columns:1fr 1fr;">
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="OEM trust (Keysight-certified, original manufacturer)"><div class="chkbox">✓</div>OEM Trust / Certification</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Warranty"><div class="chkbox">✓</div>Warranty</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Calibration / quality assurance"><div class="chkbox">✓</div>Calibration / QA</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Technical support"><div class="chkbox">✓</div>Technical Support</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Fast delivery"><div class="chkbox">✓</div>Fast Delivery</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Availability / inventory breadth"><div class="chkbox">✓</div>Inventory Breadth</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Cost savings / TCO advantage"><div class="chkbox">✓</div>Cost Savings / TCO</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Sustainability / circular economy"><div class="chkbox">✓</div>Sustainability / Circular Economy</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Access to older or hard-to-find models"><div class="chkbox">✓</div>Legacy / Hard-to-Find Models</div>
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Trade-in program"><div class="chkbox">✓</div>Trade-In Program</div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goTo(3)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(5)">Next →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 5: Scoring ── -->
+  <div class="step-card" id="step-5">
+    <div class="step-header">
+      <div class="step-badge">05 / 06</div>
+      <div><div class="step-title">Scoring Mode</div><div class="step-desc">Set the composite score weighting and add any additional context.</div></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Score Weighting Preset <span class="req">*</span></label>
+      <div class="pill-group" id="weight-pills">
+        <div class="pill on" onclick="singlePill(this,'weight-pills');updateWeightHint('standard')" data-val="standard">Standard — Campaign / Category</div>
+        <div class="pill" onclick="singlePill(this,'weight-pills');updateWeightHint('seo')" data-val="seo">SEO-Balanced</div>
+        <div class="pill" onclick="singlePill(this,'weight-pills');updateWeightHint('custom')" data-val="custom">Custom</div>
+      </div>
+      <div class="field-hint" id="weight-hint" style="margin-top:8px">Core Quality 45% · Strategic Fit 55%</div>
+    </div>
+    <div id="custom-weights" style="display:none">
+      <div class="row-2">
+        <div class="field-group"><label class="field-label">Core Quality Weight (%)</label><input type="text" id="wt-core" value="45" /></div>
+        <div class="field-group"><label class="field-label">Strategic Fit Weight (%)</label><input type="text" id="wt-strategic" value="55" /></div>
+      </div>
+      <div class="field-hint">Must sum to 100.</div>
+    </div>
+    <div class="field-group" style="margin-top:20px">
+      <label class="field-label">Additional Audit Notes <span class="opt-label">(optional)</span></label>
+      <textarea id="extra-notes" placeholder="Specific focus areas, known issues, or persona snippet to include…"></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goTo(4)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(6)">Generate Prompt →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 6: Output ── -->
+  <div class="step-card" id="step-6">
+    <div class="step-header">
+      <div class="step-badge">06 / 06</div>
+      <div><div class="step-title">Your Audit Prompt</div><div class="step-desc">Copy the prompt and paste it — together with your page content — into any LLM.</div></div>
+    </div>
+    <div class="notice"><b>ℹ</b><span>Include the full rendered page text alongside this prompt. If you uploaded screenshots, attach those files too. Use browser Reader Mode to strip navigation and footer before pasting.</span></div>
+    <div id="ss-notice" class="ss-notice" style="display:none"></div>
+    <div class="output-box" id="output-text" onclick="selectOutput()" title="Click to select all"></div>
+    <div class="copy-row">
+      <button class="btn btn-dark" onclick="copyPrompt()">⎘ Copy Prompt</button>
+      <span class="copy-feedback" id="copy-feedback"></span>
+    </div>
+    <div class="restart-row"><button class="btn-restart" onclick="location.reload()">↺ Start Over</button></div>
+  </div>
+
+</div><!-- /shell -->
+</div><!-- /builder-view -->
+
+
+<!-- ════════════════════════════════════════════════════════
+     DASHBOARD VIEW
+════════════════════════════════════════════════════════ -->
+<div id="dashboard-view">
+
+  <!-- Paste screen -->
+  <div id="db-paste-screen">
+    <div class="shell">
+      <div class="page-hero">
+        <span class="eyebrow">JSON Input · v3.0</span>
+        <h1>Audit Dashboard</h1>
+        <p>Paste the JSON output from your LLM audit result and render it as an interactive dashboard.</p>
+      </div>
+      <div class="db-steps">
+        <div class="db-step"><div class="db-step-num"><span>1</span></div><div class="db-step-text">Run the Audit Prompt in your LLM</div></div>
+        <div class="db-step"><div class="db-step-num"><span>2</span></div><div class="db-step-text">Copy the JSON output</div></div>
+        <div class="db-step"><div class="db-step-num"><span>3</span></div><div class="db-step-text">Paste it here and render</div></div>
+      </div>
+      <textarea id="db-json-input" class="db-textarea" placeholder='{&#10;  "meta": { "url": "...", "pageType": "...", "journeyStage": "...", ... },&#10;  "scores": { "ux": 6.5, "caringRulerAlignment": 5.0, ... },&#10;  ...&#10;}'></textarea>
+      <div id="db-error" class="db-error" style="display:none"></div>
+      <button class="db-load-btn" id="db-load-btn" onclick="loadDashboard()" disabled>Render Dashboard →</button>
+      <p class="db-sample-link">No JSON yet? <span onclick="loadSample()">Load a sample audit</span></p>
+    </div>
+  </div>
+
+  <!-- Dashboard screen -->
+  <div id="db-dashboard-screen" style="display:none">
+    <div class="db-header">
+      <div class="db-header-inner">
+        <div>
+          <div id="db-page-type" class="db-page-type-label">—</div>
+          <div id="db-page-url" class="db-page-url-label">—</div>
+        </div>
+        <div class="db-meta-tags">
+          <span id="db-tag-stage" class="db-tag">—</span>
+          <span id="db-tag-traffic" class="db-tag">—</span>
+          <span id="db-tag-date" class="db-tag">—</span>
+          <button class="db-export-btn" id="db-export-btn" onclick="exportPDF()">⬇ Export PDF</button>
+          <button class="db-reset-btn" onclick="resetDashboard()">← New Audit</button>
+        </div>
+      </div>
+    </div>
+    <div class="db-tabs">
+      <div class="db-tabs-inner">
+        <button class="db-tab active" onclick="setDbTab('overview',this)">Overview</button>
+        <button class="db-tab" onclick="setDbTab('quality',this)">Core Quality</button>
+        <button class="db-tab" onclick="setDbTab('strategy',this)">Strategic Fit</button>
+        <button class="db-tab" onclick="setDbTab('usps',this)">USP Coverage</button>
+        <button class="db-tab" onclick="setDbTab('risks',this)">Risks &amp; Opps</button>
+        <button class="db-tab" onclick="setDbTab('rewrites',this)">Rewrites</button>
+      </div>
+    </div>
+    <div class="db-shell">
+      <div id="db-tab-overview"></div>
+      <div id="db-tab-quality"  style="display:none"></div>
+      <div id="db-tab-strategy" style="display:none"></div>
+      <div id="db-tab-usps"     style="display:none"></div>
+      <div id="db-tab-risks"    style="display:none"></div>
+      <div id="db-tab-rewrites" style="display:none"></div>
+    </div>
+  </div>
+
+</div><!-- /dashboard-view -->
+
+
+<script>
+/* ════════════════════════════════════════════════════
+   MODE
+════════════════════════════════════════════════════ */
+function setMode(m){
+  document.getElementById('builder-view').style.display=m==='builder'?'block':'none';
+  document.getElementById('dashboard-view').style.display=m==='dashboard'?'block':'none';
+  document.getElementById('btn-builder').className='mode-btn'+(m==='builder'?' active':'');
+  document.getElementById('btn-dashboard').className='mode-btn'+(m==='dashboard'?' active':'');
+}
+
+/* ════════════════════════════════════════════════════
+   BUILDER
+════════════════════════════════════════════════════ */
+var TOTAL=6,cur=1;
+var uploads={desktop:[],mobile:[]};
+var inputMode='url';
+
+function goTo(n){
+  for(var i=1;i<=TOTAL;i++){var c=document.getElementById('step-'+i);if(c)c.classList.remove('active');}
+  var t=document.getElementById('step-'+n);if(t)t.classList.add('active');
+  if(n===TOTAL)buildPrompt();
+  cur=n;updateProgress();window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateProgress(){
+  document.getElementById('prog-count').textContent='Step '+cur+' of '+TOTAL;
+  document.getElementById('prog-fill').style.width=((cur/TOTAL)*100)+'%';
+  var dots=document.getElementById('step-dots').querySelectorAll('.step-dot');
+  for(var i=0;i<dots.length;i++){dots[i].className='step-dot';if(i+1<cur)dots[i].classList.add('done');else if(i+1===cur)dots[i].classList.add('active');}
+}
+function initDots(){
+  var wrap=document.getElementById('step-dots');wrap.innerHTML='';
+  for(var i=1;i<=TOTAL;i++){var d=document.createElement('div');d.className='step-dot'+(i===1?' active':'');(function(n){d.onclick=function(){if(n<cur)goTo(n);};})(i);wrap.appendChild(d);}
+}
+function switchTab(mode){
+  inputMode=mode;
+  document.getElementById('tab-url').className='toggle-tab'+(mode==='url'?' active':'');
+  document.getElementById('tab-screenshot').className='toggle-tab'+(mode==='screenshot'?' active':'');
+  document.getElementById('panel-url').className='toggle-panel'+(mode==='url'?' active':'');
+  document.getElementById('panel-screenshot').className='toggle-panel'+(mode==='screenshot'?' active':'');
+}
+function toggleCustom(selId,wrapId){
+  document.getElementById(wrapId).style.display=document.getElementById(selId).value==='custom'?'block':'none';
+}
+function togglePill(el){
+  // If "All" is on, turn it off when a specific option is picked
+  var grp=el.parentElement;
+  var allPill=grp.querySelector('.pill-all');
+  if(allPill&&allPill!==el&&allPill.classList.contains('on'))allPill.classList.remove('on');
+  el.classList.toggle('on');
+}
+function toggleAllPill(el,groupId){
+  var grp=document.getElementById(groupId);
+  var isOn=el.classList.contains('on');
+  // Toggle all off first
+  grp.querySelectorAll('.pill').forEach(function(p){p.classList.remove('on');});
+  if(!isOn){
+    // Select only "All"
+    el.classList.add('on');
+  }
+  // If turning off All, leave everything deselected (user picks manually)
+}
+function singlePill(el,gid){document.getElementById(gid).querySelectorAll('.pill').forEach(function(p){p.classList.remove('on');});el.classList.add('on');}
+function readPills(gid){var g=document.getElementById(gid);if(!g)return[];var o=[];g.querySelectorAll('.pill.on').forEach(function(p){o.push(p.dataset.val||p.textContent.trim());});return o;}
+function toggleCheck(el){el.classList.toggle('on');el.querySelector('.chkbox').textContent=el.classList.contains('on')?'✓':'';}
+function getUSPs(){var o=[];document.querySelectorAll('#usp-list .check-item.on').forEach(function(el){o.push(el.dataset.val);});return o;}
+function updateWeightHint(v){
+  var h={standard:'Core Quality 45% · Strategic Fit 55%',seo:'Core Quality 50% · Strategic Fit 50%',custom:'Enter custom weights below. Must sum to 100.'};
+  document.getElementById('weight-hint').textContent=h[v]||'';
+  document.getElementById('custom-weights').style.display=v==='custom'?'block':'none';
+}
+function getWeights(){
+  var v=(readPills('weight-pills')[0]||'standard');
+  if(v==='seo')return{core:50,strategic:50};
+  if(v==='custom')return{core:parseInt(document.getElementById('wt-core').value)||45,strategic:parseInt(document.getElementById('wt-strategic').value)||55};
+  return{core:45,strategic:55};
+}
+function handleUpload(ev,type){var f=Array.from(ev.target.files);if(!f.length)return;uploads[type]=uploads[type].concat(f);renderPreviews(type);document.getElementById(type+'-zone').classList.add('has-files');}
+function renderPreviews(type){
+  var strip=document.getElementById(type+'-previews');strip.innerHTML='';
+  uploads[type].forEach(function(file,idx){
+    var item=document.createElement('div');item.className='preview-item';
+    if(file.type&&file.type.startsWith('image/')){var img=document.createElement('img');img.src=URL.createObjectURL(file);item.appendChild(img);}
+    else{var icon=document.createElement('div');icon.className='preview-pdf';icon.textContent='📄';item.appendChild(icon);}
+    var lbl=document.createElement('div');lbl.className='preview-name';lbl.textContent=file.name;item.appendChild(lbl);
+    var rm=document.createElement('button');rm.className='remove-btn';rm.textContent='×';
+    rm.onclick=function(e){e.stopPropagation();uploads[type].splice(idx,1);renderPreviews(type);if(!uploads[type].length)document.getElementById(type+'-zone').classList.remove('has-files');};
+    item.appendChild(rm);strip.appendChild(item);
+  });
+}
+['desktop','mobile'].forEach(function(t){
+  var z=document.getElementById(t+'-zone');
+  z.addEventListener('dragover',function(e){e.preventDefault();});
+  z.addEventListener('drop',function(e){e.preventDefault();uploads[t]=uploads[t].concat(Array.from(e.dataTransfer.files));renderPreviews(t);z.classList.add('has-files');});
+});
+function todayStr(){var d=new Date(),m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear();}
+
+function buildPrompt(){
+  var url=document.getElementById('page-url').value.trim();
+  var dCount=uploads.desktop.length,mCount=uploads.mobile.length;
+  var ptRaw=document.getElementById('page-type').value;
+  var pageType=ptRaw==='custom'?(document.getElementById('page-type-custom').value.trim()||'[custom page type]'):(ptRaw||'[page type]');
+  var goalRaw=document.getElementById('page-goal-select').value;
+  var pageGoal=goalRaw==='custom'?(document.getElementById('page-goal-custom').value.trim()||'[custom goal]'):(goalRaw||'[primary page goal]');
+  var paPills=readPills('primary-audience-pills'),paCustom=document.getElementById('primary-audience-custom').value.trim();
+  if(paCustom)paPills.push(paCustom);
+  var primaryAud=paPills.length?paPills.join(', '):'[primary audience]';
+  var indPills=readPills('industry-pills'),indCustom=document.getElementById('industry-custom').value.trim();
+  if(indCustom)indPills.push(indCustom);
+  var industry=indPills.length?indPills.join(', '):'[industry]';
+  var secAud=document.getElementById('secondary-audience').value.trim();
+  var phaseSel=readPills('phase-pills');
+  var phase=phaseSel.length?phaseSel.join(' / '):'[journey stage]';
+  var traffSel=readPills('traffic-pills'),traffCustom=document.getElementById('traffic-custom').value.trim();
+  var traffic=traffSel.length?traffSel[0]:(traffCustom||'[traffic source]');
+  var usps=getUSPs(),weights=getWeights();
+  var notes=document.getElementById('extra-notes').value.trim();
+
+  // Page reference block
+  var pageRef='',uxNote='';
+  if(inputMode==='url'&&url){
+    pageRef='**Page URL:** '+url+'\n**Page content:** [PASTE FULL RENDERED PAGE TEXT HERE — use browser Reader Mode to strip navigation and footer]';
+  } else if(inputMode==='screenshot'&&(dCount>0||mCount>0)){
+    var fl=[];
+    uploads.desktop.forEach(function(f){fl.push('Desktop: '+f.name);});
+    uploads.mobile.forEach(function(f){fl.push('Mobile: '+f.name);});
+    pageRef='**Page screenshots attached:**\n'+fl.map(function(f){return'- '+f;}).join('\n')+'\nUse these screenshots to assess visual hierarchy, CTA placement, layout, and mobile responsiveness directly.';
+    if(dCount>0)uxNote+=' Use the attached desktop screenshot to evaluate layout and visual hierarchy directly.';
+    if(mCount>0)uxNote+=' Use the attached mobile screenshot to evaluate responsiveness and mobile UX.';
+  } else {
+    pageRef='**Page content:** [PASTE FULL RENDERED PAGE TEXT HERE, or attach screenshots]';
+  }
+
+  // Screenshot notice
+  if(inputMode==='screenshot'&&(dCount+mCount>0)){
+    var parts=[];if(dCount>0)parts.push(dCount+' desktop');if(mCount>0)parts.push(mCount+' mobile');
+    var ssEl=document.getElementById('ss-notice');
+    ssEl.textContent='✓ '+parts.join(' + ')+' screenshot'+(dCount+mCount>1?'s':'')+' referenced — attach these files when submitting to your LLM.';
+    ssEl.style.display='block';
+  } else { document.getElementById('ss-notice').style.display='none'; }
+
+  var uspRows=usps.map(function(u){return'| '+u+' | |';}).join('\n');
+  var notesBlock=notes?'\n**Additional notes / persona snippet:** '+notes+'\n':'';
+  var today=todayStr();
+  var cw=weights.core/100,sw=weights.strategic/100;
+  var hasSecondary=!!secAud;
+
+  var p=
+'SETUP NOTE FOR THE AUDITOR\n'+
+'This prompt requires that the full visible page content (HTML text, headlines, body copy, CTAs, FAQs, navigation, footer elements) is provided as input — either by:\n'+
+'- Pasting the rendered text directly (recommended: use browser Reader Mode to remove navigation/footer), or\n'+
+'- Using a tool-enabled model with web-fetch capability\n\n'+
+'Never provide only a URL without ensuring the LLM can actually retrieve the page content.\n\n'+
+'---\n\n'+
+'You are a senior B2B website auditor specializing in industrial and technical procurement. You audit pages for the **Keysight Used Equipment Store (UES)** – a dedicated e-commerce store for refurbished and used test & measurement equipment, operated directly by Keysight Technologies as the original equipment manufacturer.\n\n'+
+'The UES operates as a distinct property within the broader keysight.com ecosystem, with its own URL (keysight.com/used), buying flow, and value proposition. Its core market position is: **OEM-backed quality assurance at used-equipment pricing** – directly addressing the industry\'s default assumption that used instruments carry hidden risk. This sets the UES apart from all third-party brokers and resellers in the used T&M market.\n\n'+
+'Every page you audit must be evaluated against this central tension: **the visitor arrives with skepticism about used equipment quality, and the page must resolve that skepticism fast enough to keep them in the funnel.**\n\n'+
+'**Brand positioning – The Caring Ruler:**\n'+
+'The UES brand is positioned as the Caring Ruler: the only player in the used T&M market that combines OEM authority (size, power, responsibility) with genuine customer empathy. Unlike distant or transactional competitors, the Caring Ruler explicitly addresses customer challenges, anticipates objections, and supports buyers throughout their entire journey.\n\n'+
+'In practice this means pages should feel: confident and specific (Ruler), while also anticipating the visitor\'s concerns and resolving them proactively (Caring). Red flags for misalignment include: vague or unsubstantiated claims, purely transactional tone, content that lists products without addressing buyer hesitation, and any communication that feels top-down or dismissive.\n\n'+
+'Your role is to deliver strict, evidence-based audits. You do not flatter. You do not inflate scores. A score above 8 requires explicit justification of why this page exceeds B2B test & measurement industry best practice.\n\n'+
+'---\n\n'+
+'### PAGE CONTEXT\n\n'+
+pageRef+'\n\n'+
+'**Page type:** '+pageType+'\n'+
+'**Primary page goal:** '+pageGoal+'\n'+
+'**Customer journey stage:** '+phase+'\n'+
+'**Primary audience:** '+primaryAud+' — Industry: '+industry+'\n'+
+(hasSecondary?'**Secondary audience:** '+secAud+'\n':'')+
+'**Primary traffic source:** '+traffic+'\n'+
+'**Benchmark reference:** Evaluate relative to best-practice B2B landing pages in the test & measurement industry.\n'+
+notesBlock+
+'\n---\n\n'+
+'### SCORING DIMENSIONS\n\n'+
+'Evaluate the page on a **0–10 scale** for each dimension. Apply scoring anchors strictly:\n\n'+
+'| Score | Meaning |\n'+
+'|-------|---------|\n'+
+'| 0–3   | Absent, broken, or actively counterproductive |\n'+
+'| 4–6   | Basic requirements partially met; significant gaps present |\n'+
+'| 7–8   | Professionally executed; minor gaps only |\n'+
+'| 9–10  | Best-in-class; clearly exceeds industry standard – justify explicitly |\n\n'+
+'**Rule:** Do not assume positive intent for content not explicitly present. Only credit what is visible and verifiable. A score above 8 requires an explicit written justification.\n\n'+
+'---\n\n'+
+'### DIMENSION DEFINITIONS\n\n'+
+'#### TECHNICAL QUALITY DIMENSIONS\n\n'+
+'**1. UX (User Experience)**\n'+
+'Assess: visual hierarchy, CTA clarity and placement, page load logic, mobile readiness (infer from structure), navigation friction, form complexity, trust signals, and overall ease of conversion. Evaluate whether the page resolves the visitor\'s core skepticism (used equipment quality/risk) quickly enough to prevent bounce.'+uxNote+'\n\n'+
+'**2. SEO**\n'+
+'Assess: H1/H2 structure and keyword alignment, meta signals (if available), internal linking, structured data indicators, page topic clarity, and crawlability signals.\n\n'+
+'**3. LLM Readability**\n'+
+'*Definition: Can an LLM correctly understand, interpret, and summarize this page?*\n'+
+'Assess: semantic clarity of headings, factual density, absence of ambiguity, use of explicit entity names (brand, product category, use case), structured content patterns (lists, FAQs, clear value propositions), and absence of jargon without explanation.\n\n'+
+'**4. LLM Retrievability**\n'+
+'*Definition: Will an LLM surface this page – or content from it – when a user asks about used test equipment, a specific instrument model, or a vendor comparison?*\n\n'+
+'Assess two distinct retrieval scenarios:\n\n'+
+'**4a. Product Retrieval** – Does the page contain the explicit signals an LLM needs to recommend a specific product or category? Assess: model numbers and product names as named entities, category terms (e.g. "used oscilloscope", "refurbished signal analyzer"), availability signals, pricing transparency, and vendor identification (Keysight as OEM-seller, not third-party broker).\n\n'+
+'**4b. Knowledge Retrieval** – Will this page be cited when a user asks a trust or category question (e.g. "Is it safe to buy used test equipment from Keysight?")? Assess: citable facts and statistics, FAQ content mirroring real buyer queries, E-E-A-T signals, and whether the content would survive as a standalone answer in an AI-generated response.\n\n'+
+'Score LLM Retrievability as a weighted average of both sub-dimensions, noting which is stronger and which is weaker.\n\n'+
+'> Note: LLM Readability and LLM Retrievability are related but distinct. A page can be easy to read but not citable (marketing fluff). A page can be retrievable but confusing (dense spec sheets). Optimize both independently.\n\n'+
+'---\n\n'+
+'#### STRATEGIC FIT DIMENSIONS\n\n'+
+'**5. Page Goal Fit**\n'+
+'Does the page structure, content, and CTA hierarchy serve the stated primary page goal? Assess whether the page would actually convert or advance the visitor toward the goal. Flag any structural mismatches between stated goal and actual page behavior.\n\n'+
+'**6. Customer Journey Stage Fit**\n'+
+'Is the content appropriate for the stated customer journey stage?\n'+
+'- **Awareness:** Educate, build category relevance, establish OEM trust. No hard sell.\n'+
+'- **Consideration:** Compare, qualify, address objections. USPs must be explicit.\n'+
+'- **Purchase:** Remove final friction, confirm quality/warranty/delivery, close.\n'+
+'- **Retention:** Reinforce decision, support reorder, build long-term relationship.\n\n'+
+'Flag mismatches (e.g. Purchase-stage CTAs on an Awareness page).\n\n'+
+'**7. Persona Fit – Primary Audience ('+primaryAud+')**\n'+
+'Does the page speak directly to the primary audience\'s role, priorities, pain points, and decision criteria? Assess language register, content depth, use cases, technical specificity, and credibility signals. Engineers value specificity and evidence over emotional language.\n\n'+
+(hasSecondary?
+'**8. Persona Fit – Secondary Audience ('+secAud+')**\n'+
+'Does the page address the secondary audience\'s concerns (e.g. procurement: compliance, budget justification, vendor reliability, TCO documentation)? Note explicitly if the secondary persona is completely absent.\n\n':'')+
+'**9. USP Coverage**\n'+
+'Assess how explicitly and convincingly the page covers the following UES USPs. Credit only explicit, specific mentions – not vague implications.\n\n'+
+'| USP | Check |\n'+
+'|-----|-------|\n'+
+uspRows+'\n\n'+
+'**10. Caring Ruler Alignment**\n'+
+'Does the page reflect the Caring Ruler brand positioning? Assess: does it communicate with OEM authority and confidence (Ruler), while also anticipating visitor concerns and addressing them with empathy and specificity (Caring)? Flag any tone that is purely transactional, generic, dismissive, or that makes unsubstantiated claims.\n\n'+
+'---\n\n'+
+'### SCORE AGGREGATION\n\n'+
+'**Core Quality Score** (technical execution)\n'+
+'= (UX × 0.35) + (SEO × 0.25) + (LLM Readability × 0.20) + (LLM Retrievability × 0.20)\n\n'+
+'**Strategic Fit Score** (strategic alignment)\n'+
+'= (Page Goal Fit × 0.20) + (Journey Stage Fit × 0.20) + (Persona Fit Primary × 0.25) + '+(hasSecondary?'(Persona Fit Secondary × 0.10) + ':'')+'(USP Coverage × '+(hasSecondary?'0.15':'0.25')+') + (Caring Ruler Alignment × 0.10)\n\n'+
+'**Final Page Effectiveness Score**\n'+
+'= (Core Quality Score × '+cw+') + (Strategic Fit Score × '+sw+')\n\n'+
+'> Rationale: Strategic fit is weighted higher than technical execution because a strategically misaligned page fails regardless of technical quality.\n\n'+
+'---\n\n'+
+'### OUTPUT FORMAT\n\n'+
+'**CRITICAL: Your entire response must be one single valid JSON object and nothing else.**\n\n'+
+'Rules that must not be broken:\n'+
+'- Start your response with `{` — nothing before it, not even a blank line\n'+
+'- End your response with `}` — nothing after it\n'+
+'- Do NOT wrap in markdown code fences (no ```json or ``` anywhere)\n'+
+'- Do NOT add any explanation, preamble, summary, or commentary before or after the JSON\n'+
+'- Use ONLY straight double quote characters `"` (U+0022) as JSON delimiters — never curly/smart quotes `\u201c` `\u201d`\n'+
+'- Use ONLY straight apostrophes `\'` inside string values — never curly single quotes `\u2018` `\u2019`\n'+
+'- Do NOT include image references, file attachments, or special placeholder characters\n'+
+'- All string values must be plain text — no markdown formatting (no **, no __, no # headers) inside JSON strings\n'+
+'- All score values must be plain decimal numbers (e.g. `6.5`) — not strings, not ranges, not null\n'+
+'- `personaSecondary` must always be present in both `scores` and `rationale` — use `null` if no secondary audience was defined\n'+
+'- Every backslash inside a string value must be escaped as `\\\\`\n\n'+
+'The JSON must follow this exact structure:\n\n'+
+'{\n'+
+'  "meta": {\n'+
+'    "url": "'+(url||'[page url]')+'",\n'+
+'    "pageType": "'+pageType+'",\n'+
+'    "audience": "'+primaryAud+(hasSecondary?' / '+secAud:'')+'",\n'+
+'    "trafficSource": "'+traffic+'",\n'+
+'    "journeyStage": "'+phase+'",\n'+
+'    "auditDate": "[YYYY-MM-DD]"\n'+
+'  },\n'+
+'  "pageClassification": "[one paragraph: what kind of page, what it attempts, overall first impression, and whether it feels like a Caring Ruler]",\n'+
+'  "scores": {\n'+
+'    "ux": 0.0, "seo": 0.0, "llmReadability": 0.0, "llmRetrievability": 0.0,\n'+
+'    "pageGoalFit": 0.0, "journeyStageFit": 0.0,\n'+
+'    "personaPrimary": 0.0, "personaSecondary": '+(hasSecondary?'0.0':'null')+', "uspCoverage": 0.0, "caringRulerAlignment": 0.0\n'+
+'  },\n'+
+'  "rationale": {\n'+
+'    "ux": "2-4 sentences", "seo": "...", "llmReadability": "...",\n'+
+'    "llmRetrievability": "address both product retrieval and knowledge retrieval separately",\n'+
+'    "pageGoalFit": "...", "journeyStageFit": "...",\n'+
+'    "personaPrimary": "...", "personaSecondary": '+(hasSecondary?'"2-4 sentences"':'null')+', "uspCoverage": "...", "caringRulerAlignment": "..."\n'+
+'  },\n'+
+'  "uspCoverage": [\n'+
+'    { "name": "OEM Trust", "status": "explicit|implied|missing" },\n'+
+'    { "name": "Warranty", "status": "..." },\n'+
+'    { "name": "Calibration / QA", "status": "..." },\n'+
+'    { "name": "Technical Support", "status": "..." },\n'+
+'    { "name": "Fast Delivery", "status": "..." },\n'+
+'    { "name": "Availability", "status": "..." },\n'+
+'    { "name": "Cost Savings / TCO", "status": "..." },\n'+
+'    { "name": "Sustainability", "status": "..." },\n'+
+'    { "name": "Hard-to-find Models", "status": "..." },\n'+
+'    { "name": "Trade-in Program", "status": "..." }\n'+
+'  ],\n'+
+'  "risks": [\n'+
+'    { "rank": 1, "text": "problem statement", "consequence": "consequence if unaddressed" },\n'+
+'    { "rank": 2, "text": "...", "consequence": "..." },\n'+
+'    { "rank": 3, "text": "...", "consequence": "..." },\n'+
+'    { "rank": 4, "text": "...", "consequence": "..." },\n'+
+'    { "rank": 5, "text": "...", "consequence": "..." }\n'+
+'  ],\n'+
+'  "opportunities": [\n'+
+'    { "rank": 1, "text": "opportunity description", "benefit": "expected benefit" },\n'+
+'    { "rank": 2, "text": "...", "benefit": "..." },\n'+
+'    { "rank": 3, "text": "...", "benefit": "..." },\n'+
+'    { "rank": 4, "text": "...", "benefit": "..." },\n'+
+'    { "rank": 5, "text": "...", "benefit": "..." }\n'+
+'  ],\n'+
+'  "rewrites": {\n'+
+'    "hero":       { "current": "...", "suggested": "...", "rationale": "reference Caring Ruler tone where relevant" },\n'+
+'    "subheading": { "current": "...", "suggested": "...", "rationale": "..." },\n'+
+'    "cta":        { "current": "...", "suggested": "...", "rationale": "..." },\n'+
+'    "faqs": [\n'+
+'      { "q": "mirror a real buyer query", "a": "specific, evidence-based, Caring Ruler tone" },\n'+
+'      { "q": "...", "a": "..." },\n'+
+'      { "q": "...", "a": "..." }\n'+
+'    ]\n'+
+'  }\n'+
+'}\n\n'+
+'---\n\n'+
+'### AUDIT CONDUCT RULES\n\n'+
+'1. Be strict. Evidence-based. Do not inflate.\n'+
+'2. A score above 8 requires explicit written justification in the rationale field.\n'+
+'3. Never assume content exists if it is not visible on the page.\n'+
+'4. Do not treat vague marketing language as USP coverage or Caring Ruler alignment.\n'+
+'5. Distinguish clearly between what is **strong**, what is **weak**, and what is **missing**.\n'+
+'6. Optimize your judgment for **B2B used-equipment buying** – not consumer e-commerce.\n'+
+'7. Always evaluate LLM Retrievability across both sub-dimensions: product retrieval and knowledge retrieval.\n'+
+'8. Always check for Caring Ruler misalignment: purely transactional, generic, or unsubstantiated content is a red flag regardless of other scores.\n'+
+(hasSecondary?'9. For the secondary audience ('+secAud+'), flag any missing compliance, budget justification, or vendor-reliability content explicitly.\n':'')+
+'\n---\n\n'+
+'*Prompt Version: 3.0 | Keysight UES | Last updated: '+today+'*';
+
+  document.getElementById('output-text').textContent=p;
+}
+
+function selectOutput(){var el=document.getElementById('output-text');var r=document.createRange();r.selectNodeContents(el);var s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+function copyPrompt(){
+  var text=document.getElementById('output-text').textContent;
+  var fb=document.getElementById('copy-feedback');
+  function ok(){fb.textContent='✓ Copied to clipboard';fb.classList.add('show');setTimeout(function(){fb.classList.remove('show');},2500);}
+  function fallback(){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;border:none;';document.body.appendChild(ta);ta.focus();ta.select();try{if(document.execCommand('copy')){ok();}else{fb.textContent='Copy failed — click the text above, Ctrl+A then Ctrl+C.';fb.classList.add('show');}}catch(e){fb.textContent='Copy failed — click the text above, Ctrl+A then Ctrl+C.';fb.classList.add('show');}document.body.removeChild(ta);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(ok).catch(fallback);}else{fallback();}
+}
+
+/* ════════════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════════════ */
+var dbData=null;
+
+document.getElementById('db-json-input').addEventListener('input',function(){
+  document.getElementById('db-load-btn').disabled=!this.value.trim();
+  document.getElementById('db-error').style.display='none';
+  this.classList.remove('has-error');
+});
+
+function loadDashboard(){
+  var raw=document.getElementById('db-json-input').value;
+  // Pre-process before parse: fix all common LLM output formatting issues
+  raw=raw
+    .replace(/\u201c|\u201d/g,'"')    // smart double quotes → straight
+    .replace(/\u2018|\u2019/g,"'")    // smart single quotes → straight
+    .replace(/\u2013|\u2014/g,'-')    // en-dash / em-dash → hyphen (safe in JSON values)
+    .replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\uFFFD\uFFFC\uFFFE]/g,'') // BOM, ZWSP, invisible formatters, placeholders
+    .replace(/\r\n/g,'\n')            // normalise line endings
+    .trim();
+  // Strip any leading/trailing non-JSON wrapper text (markdown fences, prose)
+  var start=raw.indexOf('{'), end=raw.lastIndexOf('}');
+  if(start>0||end<raw.length-1){
+    if(start!==-1&&end!==-1&&end>start){raw=raw.slice(start,end+1);}
+  }
+  // Step 1: parse
+  try{dbData=JSON.parse(raw);}
+  catch(e){
+    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings.');
+    return;
+  }
+  // Step 2: render (separate catch so parse errors and render errors give different messages)
+  document.getElementById('db-error').style.display='none';
+  try{renderDashboard();}
+  catch(e){
+    showDbError('⚠ Dashboard render error: '+e.message+'. Check all required fields are present in the JSON (scores, rationale, uspCoverage, risks, opportunities, rewrites).');
+  }
+}
+function showDbError(msg){
+  document.getElementById('db-error').textContent=msg;
+  document.getElementById('db-error').style.display='block';
+  document.getElementById('db-json-input').classList.add('has-error');
+}
+function loadSample(){dbData=SAMPLE;renderDashboard();}
+function resetDashboard(){
+  dbData=null;
+  document.getElementById('db-paste-screen').style.display='block';
+  document.getElementById('db-dashboard-screen').style.display='none';
+  document.getElementById('db-json-input').value='';
+  document.getElementById('db-load-btn').disabled=true;
+}
+
+function sc(s){return s>=7.5?'var(--score-green)':s>=5?'var(--score-amber)':'var(--score-red)';}
+function sl(s){return s>=7.5?'Strong':s>=5?'Partial':'Weak';}
+
+function ring(score){
+  var color=sc(score),r=28,circ=2*Math.PI*r,pct=(score/10)*circ;
+  return '<svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg);display:block;margin:0 auto">'
+    +'<circle cx="36" cy="36" r="'+r+'" fill="none" stroke="var(--light-gray)" stroke-width="5"/>'
+    +'<circle cx="36" cy="36" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="5" stroke-dasharray="'+pct+' '+circ+'" stroke-linecap="round"/>'
+    +'</svg>';
+}
+
+function scoreBar(label,score,weight,rationale){
+  var id='sb'+Math.random().toString(36).slice(2,8);
+  var color=sc(score),pct=(score/10)*100;
+  return '<div class="score-bar-row">'
+    +'<div class="score-bar-header" id="h'+id+'" onclick="toggleBar(\''+id+'\')">'
+    +'<div style="flex:1"><div class="score-bar-name">'+label+'</div>'
+    +'<div class="score-bar-track"><div class="score-bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>'
+    +'<div class="score-bar-meta">'
+    +(weight?'<span class="score-bar-weight">w '+weight+'</span>':'')
+    +'<span class="score-bar-num" style="color:'+color+'">'+score.toFixed(1)+'</span>'
+    +'<span class="score-bar-badge" style="background:'+color+'22;color:'+color+'">'+sl(score)+'</span>'
+    +'<span class="score-bar-arrow" id="a'+id+'">▼</span>'
+    +'</div></div>'
+    +'<div class="score-bar-body" id="b'+id+'" style="display:none">'+rationale+'</div>'
+    +'</div>';
+}
+function toggleBar(id){
+  var b=document.getElementById('b'+id),a=document.getElementById('a'+id);
+  var open=b.style.display!=='none';
+  b.style.display=open?'none':'block';
+  a.textContent=open?'▼':'▲';
+}
+
+function renderDashboard(){
+  var d=dbData,s=d.scores,r=d.rationale;
+
+  // ── Safe helpers ──────────────────────────────────────────
+  // n(): coerce any score value to a number; missing/null/NaN → 0
+  function n(v){return(v!==undefined&&v!==null&&!isNaN(Number(v)))?Number(v):0;}
+  // san(): strip ChatGPT image-placeholder chars (U+FFFC/U+FFFD) and trim
+  function san(v){if(!v&&v!==0)return'';var s=String(v);for(var i=s.length-1;i>=0;i--){var c=s.charCodeAt(i);if(c===0xFFFC||c===0xFFFD||c===0xFFFE)s=s.slice(0,i)+s.slice(i+1);}return s.trim();}
+  // ─────────────────────────────────────────────────────────
+
+  // v3 weights — all score reads wrapped in n()
+  var cq=n(s.ux)*0.35+n(s.seo)*0.25+n(s.llmReadability)*0.20+n(s.llmRetrievability)*0.20;
+  // personaSecondary is optional — treat null/undefined/0 as absent
+  var hasSecondary=(s.personaSecondary!==undefined&&s.personaSecondary!==null&&n(s.personaSecondary)>0);
+  var jsf=n(s.journeyStageFit||s.buyingPhaseFit);
+  var sf=n(s.pageGoalFit)*0.20+jsf*0.20+n(s.personaPrimary)*0.25
+    +(hasSecondary?n(s.personaSecondary)*0.10:0)
+    +n(s.uspCoverage)*(hasSecondary?0.15:0.25)
+    +n(s.caringRulerAlignment)*0.10;
+  var fe=cq*0.45+sf*0.55;
+
+  // Header
+  document.getElementById('db-page-type').textContent=san(d.meta.pageType)||'—';
+  document.getElementById('db-page-url').textContent=san(d.meta.url)||'—';
+  document.getElementById('db-tag-stage').textContent=san(d.meta.journeyStage||d.meta.buyingPhase)||'—';
+  document.getElementById('db-tag-traffic').textContent=san(d.meta.trafficSource)||'—';
+  document.getElementById('db-tag-date').textContent=san(d.meta.auditDate)||'—';
+
+  // OVERVIEW — rings
+  var rings='<div class="ring-grid">';
+  [[cq,'Core Quality','UX · SEO · LLM'],[sf,'Strategic Fit','Goal · Stage · Persona · USP · CR'],[fe,'Final Effectiveness','Weighted composite']].forEach(function(x){
+    var c=sc(x[0]);
+    rings+='<div class="ring-card">'+ring(x[0])
+      +'<div style="margin-top:8px"><span class="ring-score" style="color:'+c+'">'+x[0].toFixed(1)+'</span></div>'
+      +'<div class="ring-label">'+x[1]+'</div><div class="ring-sub">'+x[2]+'</div></div>';
+  });
+  rings+='</div>';
+
+  var classification='<div class="db-classification"><div class="db-classification-label">Page Classification</div>'+san(d.pageClassification||'—')+'</div>';
+
+  // Mini score grid
+  var mini='<div class="mini-grid">';
+  var miniRows=[
+    ['UX',n(s.ux)],['SEO',n(s.seo)],
+    ['LLM Readability',n(s.llmReadability)],['LLM Retrievability',n(s.llmRetrievability)],
+    ['Page Goal Fit',n(s.pageGoalFit)],['Journey Stage Fit',jsf],
+    ['Persona – Primary',n(s.personaPrimary)],['USP Coverage',n(s.uspCoverage)],
+    ['Caring Ruler',n(s.caringRulerAlignment)]
+  ];
+  if(hasSecondary)miniRows.splice(8,0,['Persona – Secondary',n(s.personaSecondary)]);
+  miniRows.forEach(function(row){
+    var c=sc(row[1]);
+    mini+='<div class="mini-row"><div class="mini-label">'+row[0]+'</div>'
+      +'<div class="mini-track"><div class="mini-fill" style="width:'+((row[1]/10)*100)+'%;background:'+c+'"></div></div>'
+      +'<span class="mini-score" style="color:'+c+'">'+row[1].toFixed(1)+'</span></div>';
+  });
+  mini+='</div>';
+  document.getElementById('db-tab-overview').innerHTML=rings+classification+mini;
+
+  // CORE QUALITY
+  document.getElementById('db-tab-quality').innerHTML=
+    '<div class="db-section-label">Core Quality Score: '+cq.toFixed(2)+' — click a row to expand the rationale</div>'
+    +scoreBar('UX — User Experience',n(s.ux),'0.35',san(r.ux))
+    +scoreBar('SEO',n(s.seo),'0.25',san(r.seo))
+    +scoreBar('LLM Readability',n(s.llmReadability),'0.20',san(r.llmReadability))
+    +scoreBar('LLM Retrievability',n(s.llmRetrievability),'0.20',san(r.llmRetrievability));
+
+  // STRATEGIC FIT
+  var stratHTML='<div class="db-section-label">Strategic Fit Score: '+sf.toFixed(2)+' — click a row to expand the rationale</div>'
+    +scoreBar('Page Goal Fit',n(s.pageGoalFit),'0.20',san(r.pageGoalFit))
+    +scoreBar('Journey Stage Fit',jsf,'0.20',san(r.journeyStageFit||r.buyingPhaseFit||''))
+    +scoreBar('Persona Fit – Primary',n(s.personaPrimary),'0.25',san(r.personaPrimary));
+  if(hasSecondary)stratHTML+=scoreBar('Persona Fit – Secondary',n(s.personaSecondary),'0.10',san(r.personaSecondary||''));
+  stratHTML+=scoreBar('USP Coverage',n(s.uspCoverage),hasSecondary?'0.15':'0.25',san(r.uspCoverage))
+    +scoreBar('Caring Ruler Alignment',n(s.caringRulerAlignment),'0.10',san(r.caringRulerAlignment));
+  document.getElementById('db-tab-strategy').innerHTML=stratHTML;
+
+  // USPs
+  var uspGrid='<div class="usp-grid">';
+  d.uspCoverage.forEach(function(u){
+    var status=(u.status||'missing').toLowerCase().trim();
+    var cls='usp-'+status;
+    uspGrid+='<div class="usp-item '+cls+'"><div class="usp-dot"></div><span class="usp-name">'+san(u.name)+'</span><span class="usp-status">'+status+'</span></div>';
+  });
+  uspGrid+='</div>';
+  var legend='<div class="usp-legend">';
+  [{s:'explicit',c:'var(--score-green)'},{s:'implied',c:'var(--score-amber)'},{s:'missing',c:'var(--score-red)'}].forEach(function(l){
+    var cnt=d.uspCoverage.filter(function(u){return(u.status||'').toLowerCase().trim()===l.s;}).length;
+    legend+='<div class="usp-legend-item"><div style="width:7px;height:7px;border-radius:50%;background:'+l.c+'"></div><span style="text-transform:capitalize">'+l.s+': <strong style="color:'+l.c+'">'+cnt+'</strong></span></div>';
+  });
+  legend+='</div>';
+  document.getElementById('db-tab-usps').innerHTML='<div class="db-section-label">USP Coverage Assessment</div>'+uspGrid+legend;
+
+  // RISKS & OPPS
+  var riskHTML='<div><div class="ro-section-label" style="color:var(--score-red)">Top 5 Risks</div>';
+  d.risks.forEach(function(item){riskHTML+='<div class="risk-item"><div class="ro-rank" style="color:var(--score-red)">#'+item.rank+'</div><div class="ro-text">'+san(item.text)+'</div><div class="ro-sub">'+san(item.consequence)+'</div></div>';});
+  riskHTML+='</div>';
+  var oppHTML='<div><div class="ro-section-label" style="color:var(--score-green)">Top 5 Opportunities</div>';
+  d.opportunities.forEach(function(item){oppHTML+='<div class="opp-item"><div class="ro-rank" style="color:var(--score-green)">#'+item.rank+'</div><div class="ro-text">'+san(item.text)+'</div><div class="ro-sub">'+san(item.benefit)+'</div></div>';});
+  oppHTML+='</div>';
+  document.getElementById('db-tab-risks').innerHTML='<div class="risk-opp-grid">'+riskHTML+oppHTML+'</div>';
+
+  // REWRITES
+  var rw=d.rewrites;
+  var rwHTML='<div class="db-section-label">Rewrite Suggestions</div>';
+  [['Hero Headline',rw.hero],['Subheading',rw.subheading],['Primary CTA',rw.cta]].forEach(function(pair){
+    rwHTML+='<div class="rewrite-card"><div class="rewrite-label">'+pair[0]+'</div>'
+      +'<div class="rewrite-cols">'
+      +'<div class="rewrite-side rewrite-current"><div class="rewrite-side-label" style="color:var(--score-red)">CURRENT</div><div class="rewrite-text">'+san(pair[1].current)+'</div></div>'
+      +'<div class="rewrite-side rewrite-suggested"><div class="rewrite-side-label" style="color:var(--score-green)">SUGGESTED</div><div class="rewrite-text strong">'+san(pair[1].suggested)+'</div></div>'
+      +'</div><div class="rewrite-rationale">↳ '+san(pair[1].rationale)+'</div></div>';
+  });
+  rwHTML+='<div class="rewrite-card"><div class="rewrite-label">Suggested FAQs</div>';
+  rw.faqs.forEach(function(f){rwHTML+='<div class="faq-item"><div class="faq-q">Q: '+san(f.q)+'</div><div class="faq-a">A: '+san(f.a)+'</div></div>';});
+  rwHTML+='</div>';
+  document.getElementById('db-tab-rewrites').innerHTML=rwHTML;
+
+  document.getElementById('db-paste-screen').style.display='none';
+  document.getElementById('db-dashboard-screen').style.display='block';
+  setDbTab('overview',document.querySelector('.db-tab'));
+}
+
+function setDbTab(id,btn){
+  ['overview','quality','strategy','usps','risks','rewrites'].forEach(function(t){
+    document.getElementById('db-tab-'+t).style.display=t===id?'block':'none';
+  });
+  document.querySelectorAll('.db-tab').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+}
+
+/* ════════════════════════════════════════════════════
+   PDF EXPORT
+════════════════════════════════════════════════════ */
+async function exportPDF(){
+  var btn=document.getElementById('db-export-btn');
+  btn.disabled=true;btn.textContent='Generating…';
+
+  var {jsPDF}=window.jspdf;
+  var pageW=210,pageH=297; // A4 mm
+  var margin=12;
+  var contentW=pageW-margin*2;
+  var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+  var tabs=['overview','quality','strategy','usps','risks','rewrites'];
+  var tabLabels=['Overview','Core Quality','Strategic Fit','USP Coverage','Risks & Opportunities','Rewrites'];
+
+  // Get audit meta for header
+  var pageTypeEl=document.getElementById('db-page-type');
+  var pageUrlEl=document.getElementById('db-page-url');
+  var tagStage=document.getElementById('db-tag-stage');
+  var tagDate=document.getElementById('db-tag-date');
+  var auditTitle=pageTypeEl?pageTypeEl.textContent:'UES Audit';
+  var auditUrl=pageUrlEl?pageUrlEl.textContent:'';
+  var auditDate=tagDate?tagDate.textContent:'';
+
+  // Save current active tab so we can restore it
+  var activeTabEl=document.querySelector('.db-tab.active');
+  var activeTabId=activeTabEl?activeTabEl.textContent.toLowerCase().replace(/[^a-z]/g,''):'overview';
+
+  for(var ti=0;ti<tabs.length;ti++){
+    var tabId=tabs[ti];
+    var panel=document.getElementById('db-tab-'+tabId);
+    if(!panel)continue;
+
+    // Show this tab fully for capture
+    tabs.forEach(function(t){
+      var p=document.getElementById('db-tab-'+t);
+      if(p)p.style.display=t===tabId?'block':'none';
+    });
+    // Temporarily make panel full-width, no clip, for capture
+    panel.style.display='block';
+    panel.style.width='900px';
+    panel.style.overflow='visible';
+    panel.style.maxHeight='none';
+
+    // Wait for layout
+    await new Promise(function(r){setTimeout(r,120);});
+
+    var canvas=await html2canvas(panel,{
+      scale:2,
+      useCORS:true,
+      backgroundColor:'#F2F2F0',
+      logging:false,
+      width:900,
+      windowWidth:960
+    });
+
+    // Reset panel style
+    panel.style.width='';
+    panel.style.overflow='';
+    panel.style.maxHeight='';
+
+    if(ti>0)pdf.addPage();
+
+    // ── Page header ──────────────────────────────
+    // Red accent bar
+    pdf.setFillColor(233,0,41);
+    pdf.rect(0,0,pageW,2,'F');
+
+    // Page title area
+    pdf.setFillColor(255,255,255);
+    pdf.rect(0,2,pageW,16,'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(0,0,0);
+    pdf.text('KEYSIGHT UES AUDIT',margin,10);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(151,153,155);
+    pdf.text(auditUrl||auditTitle,margin,14.5);
+    // Tab name right-aligned
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(233,0,41);
+    pdf.text(tabLabels[ti].toUpperCase(),pageW-margin,10,{align:'right'});
+    // Date
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(151,153,155);
+    pdf.text(auditDate,pageW-margin,14.5,{align:'right'});
+
+    // Thin separator
+    pdf.setDrawColor(217,217,214);
+    pdf.setLineWidth(0.2);
+    pdf.line(margin,18,pageW-margin,18);
+
+    // ── Tab content (canvas image) ──────────────
+    var imgData=canvas.toDataURL('image/png');
+    var imgW=contentW;
+    var rawH=(canvas.height/canvas.width)*imgW;
+    var availH=pageH-22-margin; // below header, above bottom margin
+
+    if(rawH<=availH){
+      // Fits on one page
+      pdf.addImage(imgData,'PNG',margin,20,imgW,rawH);
+    } else {
+      // Tile across multiple pages
+      var scale=imgW/canvas.width; // mm per px
+      var sliceHpx=Math.floor(availH/scale); // px per page slice
+      var sliceHmm=sliceHpx*scale;
+      var pages=Math.ceil(canvas.height/sliceHpx);
+      for(var pg=0;pg<pages;pg++){
+        if(pg>0){
+          pdf.addPage();
+          // Repeat header on continuation pages
+          pdf.setFillColor(233,0,41);pdf.rect(0,0,pageW,2,'F');
+          pdf.setFillColor(255,255,255);pdf.rect(0,2,pageW,16,'F');
+          pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(0,0,0);
+          pdf.text('KEYSIGHT UES AUDIT',margin,10);
+          pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(233,0,41);
+          pdf.text(tabLabels[ti].toUpperCase()+' (cont.)',pageW-margin,10,{align:'right'});
+          pdf.setDrawColor(217,217,214);pdf.setLineWidth(0.2);pdf.line(margin,18,pageW-margin,18);
+        }
+        // Slice canvas
+        var sliceCanvas=document.createElement('canvas');
+        sliceCanvas.width=canvas.width;
+        sliceCanvas.height=Math.min(sliceHpx,canvas.height-pg*sliceHpx);
+        var ctx=sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas,0,-pg*sliceHpx);
+        pdf.addImage(sliceCanvas.toDataURL('image/png'),'PNG',margin,20,imgW,sliceCanvas.height*scale);
+      }
+    }
+
+    // ── Page number footer ──────────────────────
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
+    pdf.text('Page '+(ti+1)+' of '+tabs.length,pageW/2,pageH-4,{align:'center'});
+  }
+
+  // Restore the originally active tab
+  setDbTab(activeTabId, document.querySelector('.db-tab'));
+
+  // Save
+  var filename='UES-Audit-'+(auditUrl||'report').replace(/https?:\/\//g,'').replace(/[^a-z0-9]/gi,'-').replace(/-+/g,'-').slice(0,40)+'-'+auditDate+'.pdf';
+  pdf.save(filename);
+
+  btn.disabled=false;btn.textContent='⬇ Export PDF';
+}
+
+/* ════════════════════════════════════════════════════
+   SAMPLE DATA (v3 schema)
+════════════════════════════════════════════════════ */
+var SAMPLE={
+  meta:{url:"https://www.keysight.com/used/de/en/ip/automotive",pageType:"Campaign Landing Page",audience:"R&D Engineers / Procurement – Automotive",trafficSource:"LinkedIn Campaign",journeyStage:"Awareness",auditDate:"2026-03-10"},
+  pageClassification:"A campaign-oriented landing page targeting automotive engineers via LinkedIn. The page attempts to establish category relevance for used test equipment in automotive R&D contexts, but reads more like a generic product listing than a purposeful Awareness page. It fails to resolve the visitor's core skepticism about used equipment quality — the central tension of the UES value proposition — within the first scroll. First impression: structurally sparse, with weak USP articulation, no Caring Ruler tone, and insufficient persona-specific depth for a TOFU campaign audience.",
+  scores:{ux:5.5,seo:4.5,llmReadability:4.0,llmRetrievability:3.0,pageGoalFit:4.5,journeyStageFit:5.0,personaPrimary:4.0,personaSecondary:2.0,uspCoverage:3.5,caringRulerAlignment:3.0},
+  rationale:{
+    ux:"Basic structure present with a single CTA, but visual hierarchy is weak. No trust signals above the fold. Mobile layout untested. CTA copy is generic and does not reflect campaign context. The page does not address visitor skepticism about used equipment quality quickly enough to prevent bounce.",
+    seo:"H1 present but keyword alignment to 'automotive test equipment' is shallow. No visible structured data. Internal linking sparse. Meta signals not assessable from page view.",
+    llmReadability:"Content is too vague for reliable LLM interpretation. Key entities (product categories, use cases, brand authority) are underspecified. Marketing language dominates over factual density, making it difficult for an LLM to extract meaningful, citable content.",
+    llmRetrievability:"Product Retrieval: Weak — no model numbers or specific category terms visible. Knowledge Retrieval: Very weak — no FAQ content, no citable statistics, no E-E-A-T signals. Page would not be cited by any LLM when answering either product or trust questions.",
+    pageGoalFit:"Campaign promise matching is weak — the page does not clearly reflect the LinkedIn ad message. CTA hierarchy unclear. Conversion friction unaddressed. Page goal of driving conversion is structurally unsupported.",
+    journeyStageFit:"Some awareness-stage content present, but insufficient education for first-time visitors. No 'why used equipment?' narrative. No OEM trust signal above the fold. Drops visitors without building enough confidence to advance in the funnel.",
+    personaPrimary:"Engineers are not spoken to with technical specificity. No use-case scenarios, no product category depth, no application context for automotive R&D workflows. Language is generic B2C retail rather than B2B technical.",
+    personaSecondary:"Procurement audience is entirely absent. No content addressing compliance, budget justification, TCO documentation, or vendor reliability frameworks.",
+    uspCoverage:"Only cost savings is weakly implied. Warranty, calibration, OEM trust, technical support, and sustainability are not mentioned. Trade-in and hard-to-find models fully absent. USP coverage is critically low for an Awareness page that needs to build trust.",
+    caringRulerAlignment:"The page reads as purely transactional — product listings without empathy or OEM authority. There is no acknowledgement of buyer hesitation, no reassurance language, and no demonstration of expertise. This is the opposite of the Caring Ruler positioning."
+  },
+  uspCoverage:[
+    {name:"OEM Trust",status:"missing"},{name:"Warranty",status:"missing"},
+    {name:"Calibration / QA",status:"missing"},{name:"Technical Support",status:"missing"},
+    {name:"Fast Delivery",status:"implied"},{name:"Availability",status:"implied"},
+    {name:"Cost Savings / TCO",status:"implied"},{name:"Sustainability",status:"missing"},
+    {name:"Hard-to-find Models",status:"missing"},{name:"Trade-in Program",status:"missing"}
+  ],
+  risks:[
+    {rank:1,text:"No trust signals above fold",consequence:"LinkedIn visitors bounce before scrolling — wasted ad spend and no conversion."},
+    {rank:2,text:"Generic CTA with no campaign continuity",consequence:"Breaks message match from LinkedIn ad, reducing conversion rate significantly."},
+    {rank:3,text:"Zero LLM retrievability",consequence:"Page will not appear in AI-assisted vendor research via ChatGPT or Perplexity."},
+    {rank:4,text:"Procurement persona completely absent",consequence:"Budget approvers find no relevant content and disengage — stalling purchase decisions."},
+    {rank:5,text:"No Caring Ruler tone or empathy signals",consequence:"Page feels transactional and undifferentiated from third-party resellers, undermining OEM authority."}
+  ],
+  opportunities:[
+    {rank:1,text:"Add warranty + calibration trust block above fold",benefit:"Directly addresses the #1 objection in used equipment buying and reduces bounce."},
+    {rank:2,text:"Write 5 automotive-specific FAQs addressing quality and compliance",benefit:"Boosts LLM retrievability and captures long-tail search traffic from engineers."},
+    {rank:3,text:"Insert a TCO calculator or cost-saving proof point",benefit:"Gives procurement a budget justification tool and addresses secondary persona directly."},
+    {rank:4,text:"Rewrite page intro with Caring Ruler tone — acknowledge hesitation, then resolve it",benefit:"Differentiates UES from brokers and builds the trust needed for Awareness-stage visitors to advance."},
+    {rank:5,text:"Add sustainability section with circular economy framing",benefit:"Aligns with automotive OEM ESG mandates and adds a missing USP explicitly."}
+  ],
+  rewrites:{
+    hero:{current:"Used Test Equipment for Automotive",suggested:"Keysight-Certified Used Equipment for Automotive R&D — Warranted, Calibrated, Backed by the OEM",rationale:"Names brand authority and OEM-seller status, addresses the two primary quality objections, and signals delivery readiness. Caring Ruler in action: confident (Ruler) + resolves hesitation (Caring)."},
+    subheading:{current:"Find the right instruments for your automotive applications.",suggested:"Cut instrumentation costs by up to 50% without compromising test integrity. Every unit calibrated to factory spec, warranted, and backed by Keysight technical support — not a third-party broker.",rationale:"Leads with TCO benefit, immediately resolves the quality objection, and differentiates from resellers. Relevant for both engineer (quality) and procurement (cost)."},
+    cta:{current:"Shop Now",suggested:"Browse Automotive Test Equipment",rationale:"Context-specific and lower friction than 'Shop Now', which reads as consumer commerce rather than B2B procurement."},
+    faqs:[
+      {q:"Are Keysight used instruments suitable for automotive homologation and compliance testing?",a:"Yes. All instruments sold through the Keysight Used Equipment Store are fully calibrated to factory specifications and include a traceable calibration certificate, meeting the same accuracy standards as new equipment."},
+      {q:"What warranty do I get on used Keysight equipment?",a:"Every instrument includes a minimum 1-year Keysight warranty covering parts, labor, and access to Keysight technical support — the same support organization that supports new equipment."},
+      {q:"How is buying used equipment directly from Keysight different from a third-party broker?",a:"As the original manufacturer, Keysight tests and calibrates every used unit against the same factory specifications used for new equipment. Third-party brokers cannot offer OEM calibration, OEM warranty, or access to Keysight's technical support team."}
+    ]
+  }
+};
+
+/* ════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════ */
+initDots();
+</script>
+</body>
+</html>
