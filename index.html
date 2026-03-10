@@ -335,7 +335,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="toggle-tab" id="tab-screenshot" onclick="switchTab('screenshot')">Upload Screenshots</button>
       </div>
       <div class="toggle-panel active" id="panel-url">
-        <div class="notice"><b>!</b><span>Only provide a URL if your LLM supports web-fetch. Otherwise, paste the full rendered page text (browser Reader Mode recommended to strip navigation/footer) alongside the generated prompt.</span></div>
+        <div class="notice"><b>!</b><span>Only provide a URL if your LLM supports web-fetch. Otherwise, paste the full rendered page text (browser Reader Mode recommended to strip navigation/footer) alongside the generated prompt. For the persona context: Use the compressed persona snippet (8–10 lines) from the persona library. The full persona documentation remains the source document but should not be included in full in the prompt.</span></div>
         <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" />
         <div class="field-hint">The full page text must accompany this prompt for the LLM to perform the audit.</div>
       </div>
