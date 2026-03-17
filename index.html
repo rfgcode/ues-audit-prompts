@@ -628,7 +628,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="db-step"><div class="db-step-num"><span>3</span></div><div class="db-step-text">Paste it here and render</div></div>
       </div>
       <textarea id="db-json-input" class="db-textarea" placeholder='{&#10;  "meta": { "url": "...", "pageType": "...", "journeyStage": "...", ... },&#10;  "scores": { "ux": 6.5, "caringRulerAlignment": 5.0, ... },&#10;  ...&#10;}'></textarea>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;">If the LLM added introductory text before the JSON, the dashboard will strip it automatically. Just paste the full response.</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;">Paste the full LLM response — even if it includes introductory text, the dashboard will automatically find and extract the JSON.</div>
       <div id="db-error" class="db-error" style="display:none"></div>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
         <label style="font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-mid);white-space:nowrap;">LLM Used</label>
@@ -951,19 +951,9 @@ function buildPrompt(){
   var hasSecondary=!!secAud;
 
   var p=
-'These are your instructions. Execute them directly without asking for confirmation.\n\n'+
-'⚠ CRITICAL OUTPUT FORMAT — THIS OVERRIDES EVERYTHING ELSE\n'+
-'Your ENTIRE response must be ONE valid JSON object. Nothing before it. Nothing after it.\n'+
-'— Do NOT write "I will now...", "Let me analyze...", "Here is the JSON..." or any other preamble.\n'+
-'— Do NOT write any summary, commentary, or explanation after the JSON.\n'+
-'— Do NOT use markdown, headers, bullet points, or code fences.\n'+
-'— The very first character of your response must be { and the very last must be }.\n'+
-'— Any text outside the braces makes the output completely unparseable by the dashboard.\n\n'+
+'You are a senior B2B website auditor specializing in industrial and technical procurement. Your task is to audit a page for the Keysight Used Equipment Store (UES) and return your findings as a structured JSON object.\n\n'+
+'Please return your entire response as a single valid JSON object using the schema defined later in this prompt. Do not include any introductory text, commentary, or explanation — the JSON will be parsed directly by a dashboard application. If you need to add context, place it inside the relevant JSON fields.\n\n'+
 '---\n\n'+
-'SETUP NOTE FOR THE AUDITOR\n'+
-'The page to audit is provided either as a URL (fetch it using your web browsing capability) or as attached screenshots and PDF files (use these to assess the visual layout, content, and structure directly).\n\n'+
-'---\n\n'+
-'You are a senior B2B website auditor specializing in industrial and technical procurement. You audit pages for the **Keysight Used Equipment Store (UES)** – a dedicated e-commerce store for refurbished and used test & measurement equipment, operated directly by Keysight Technologies as the original equipment manufacturer.\n\n'+
 'The UES operates as a distinct property within the broader keysight.com ecosystem, with its own URL (keysight.com/used), buying flow, and value proposition. Its core market position is: **OEM-backed quality assurance at used-equipment pricing** – directly addressing the industry\'s default assumption that used instruments carry hidden risk. This sets the UES apart from all third-party brokers and resellers in the used T&M market.\n\n'+
 'Every page you audit must be evaluated against this central tension: **the visitor arrives with skepticism about used equipment quality, and the page must resolve that skepticism fast enough to keep them in the funnel.**\n\n'+
 '**Brand positioning – The Caring Ruler:**\n'+
@@ -1046,16 +1036,12 @@ uspRows+'\n\n'+
 '> Rationale: Strategic fit is weighted higher than technical execution because a strategically misaligned page fails regardless of technical quality.\n\n'+
 '---\n\n'+
 '### OUTPUT FORMAT\n\n'+
-'REMINDER: Your entire response must be one single valid JSON object and nothing else. This output is parsed directly by a machine — any prose, markdown, commentary, or explanation will break it completely.\n\n'+
-'Strict rules:\n'+
-'- Start with `{` — nothing before it, not even a blank line\n'+
-'- End with `}` — nothing after it\n'+
-'- No markdown code fences (no ```json or ``` anywhere)\n'+
-'- No explanation, preamble, summary, or commentary before or after the JSON\n'+
-'- Straight double quotes `"` only — never curly/smart quotes\n'+
-'- Plain text string values only — no **, no __, no # headers inside JSON strings\n'+
-'- Score values must be plain decimal numbers (e.g. `6.5`) — not strings, not ranges\n'+
-'- `personaSecondary` must be present in both `scores` and `rationale` — use `null` if no secondary audience\n\n'+
+'Return your findings as a single JSON object matching the schema below. The JSON is parsed directly by a dashboard — please avoid prose, markdown formatting, or code fences around the output. Place all your analysis inside the relevant JSON fields.\n\n'+
+'Format requirements:\n'+
+'- Straight double quotes only — no curly/smart quotes\n'+
+'- Plain text inside string values — no markdown formatting (no **, no __, no # headers)\n'+
+'- Score values as plain decimal numbers (e.g. `6.5`) — not strings or ranges\n'+
+'- `personaSecondary` must be present in both `scores` and `rationale` — use `null` if no secondary audience was defined\n\n'+
 'The JSON must follow this exact structure:\n\n'+
 '{\n'+
 '  "meta": {\n'+
@@ -1132,7 +1118,7 @@ usps.map(function(u){return'    { "name": "'+u.replace(/\s*—.*/,'').trim()+'",
 compBlock+
 '\n---\n\n'+
 '*Prompt Version: 1.0 | Keysight UES | Date created: '+today+'*\n\n'+
-'⚠ FINAL REMINDER: Respond with JSON only. Start with { and end with }. No text outside the braces.';
+'Please return the JSON object only, with no surrounding text, so it can be pasted directly into the audit dashboard.';
 
   document.getElementById('output-text').textContent=p;
 }
@@ -1169,8 +1155,9 @@ function loadDashboard(){
     // Gemini grounding citations — [cite_start] markers and [cite: N, N] references
     .replace(/\[cite_start\]/g,'')
     .replace(/\[cite:\s*[\d,\s]+\]/g,'')
-    // Markdown link syntax inside JSON strings: [label](url) → url
-    .replace(/\[([^\]]*)\]\(([^)]+)\)/g,'$2')
+    // Markdown link syntax inside JSON strings: [label](url) or [label]\n(url) → url
+    // [^\"\\]] prevents the match from spanning across JSON string delimiters
+    .replace(/\[([^"[\]]*)\]\s*\(([^)"]+)\)/g,'$2')
     .trim();
   // Strip any leading/trailing non-JSON wrapper text (markdown fences, prose)
   var start=raw.indexOf('{'), end=raw.lastIndexOf('}');
@@ -1201,10 +1188,35 @@ function loadDashboard(){
   // Fix: LLMs sometimes nest pageClassification inside meta, producing a stray }
   // Pattern: "pageClassification": "..."\n},\n"scores" → remove the stray }
   raw=raw.replace(/(\"pageClassification\"\s*:\s*\"[^\"]*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
-  // Step 1: parse
-  try{dbData=JSON.parse(raw);}
-  catch(e){
-    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings, (4) Gemini citation markers like [cite_start] or [cite: N] — stripped automatically, (5) markdown link syntax like [text](url) — stripped automatically, (6) literal newline characters inside string values (common in ChatGPT output) — stripped automatically. If you see this error, try pasting again as the auto-fixer may need a second pass.');
+  // Step 1: try to parse. If it fails, attempt smart extraction — find the largest
+  // valid JSON object in the text (handles prose wrappers from non-compliant LLMs)
+  var parsed=false;
+  // First try the full preprocessed string
+  try{dbData=JSON.parse(raw);parsed=true;}catch(e){}
+  // If that failed, scan for every { and try to find a valid JSON object starting there
+  if(!parsed){
+    var candidates=[];
+    for(var si=0;si<raw.length;si++){
+      if(raw[si]==='{'){
+        // Try from here to each subsequent }
+        var depth=0,inS=false,es=false;
+        for(var ei=si;ei<raw.length;ei++){
+          var ec=raw[ei];
+          if(es){es=false;continue;}
+          if(ec==='\\'&&inS){es=true;continue;}
+          if(ec==='"'){inS=!inS;continue;}
+          if(!inS){if(ec==='{')depth++;else if(ec==='}'){depth--;if(depth===0){candidates.push(raw.slice(si,ei+1));break;}}}
+        }
+      }
+    }
+    // Sort by length descending — we want the largest valid JSON object (the full audit)
+    candidates.sort(function(a,b){return b.length-a.length;});
+    for(var ci=0;ci<candidates.length;ci++){
+      try{dbData=JSON.parse(candidates[ci]);parsed=true;break;}catch(e){}
+    }
+  }
+  if(!parsed){
+    showDbError('⚠ Could not find valid JSON in the pasted text.\n\nIf the LLM responded with a written summary instead of JSON, ask it to try again and specifically request JSON output. The dashboard can only render structured JSON data.\n\nIf you already have JSON but see a parse error, common causes include: smart quote characters, Gemini citation markers [cite: N], or markdown code fences — all of which are stripped automatically on paste.');
     return;
   }
   // Step 2: render (separate catch so parse errors and render errors give different messages)
