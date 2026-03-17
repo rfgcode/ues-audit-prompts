@@ -343,7 +343,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="toggle-panel active" id="panel-url">
         <div class="notice"><b>!</b><span>Only share a URL if your LLM can access and fetch web content. Otherwise, upload a screenshot of the page using the toggle above and include it when providing the prompt to the LLM.</span></div>
         <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" />
-        <div class="field-hint">The full page text must accompany this prompt for the LLM to perform the audit.</div>
+        <div class="field-hint">The LLM will fetch and audit the page at this URL. Make sure your LLM supports web browsing.</div>
       </div>
       <div class="toggle-panel" id="panel-screenshot">
         <div class="notice"><b>ℹ</b><span>Attach these files alongside the prompt when submitting to your LLM — they enable direct assessment of visual UX, layout, and responsiveness.</span></div>
@@ -584,9 +584,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="step-card" id="step-7">
     <div class="step-header">
       <div class="step-badge">07 / 07</div>
-      <div><div class="step-title">Your Audit Prompt</div><div class="step-desc">Copy the prompt and paste it — together with your page content — into any LLM.</div></div>
+      <div><div class="step-title">Your Audit Prompt</div><div class="step-desc">Copy the prompt and paste it — together with your screenshots or URL — into any LLM.</div></div>
     </div>
-    <div class="notice"><b>ℹ</b><span>Include the full rendered page text alongside this prompt. If you uploaded screenshots, attach those files too.</span></div>
+    <div class="notice"><b>ℹ</b><span>If you used the URL option, make sure your LLM supports web browsing. If you uploaded screenshots or PDFs, attach those files when submitting the prompt to your LLM.</span></div>
     <div id="ss-notice" class="ss-notice" style="display:none"></div>
     <div id="file-checklist" style="display:none;background:var(--white);border:1px solid var(--border);border-left:3px solid var(--dark-gray);padding:14px 16px;margin-bottom:16px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin-bottom:10px;">📎 Files to attach to your LLM</div>
@@ -896,7 +896,7 @@ function buildPrompt(){
   // Page reference block
   var pageRef='',uxNote='';
   if(inputMode==='url'&&url){
-    pageRef='**Page URL:** '+url+'\n**Page content:** [PASTE FULL RENDERED PAGE TEXT HERE — use browser Reader Mode to strip navigation and footer]';
+    pageRef='**Page URL:** '+url+'\nFetch and audit the live page at this URL. Use your web browsing capability to retrieve the full page content.';
   } else if(inputMode==='screenshot'&&(dCount>0||mCount>0)){
     var fl=[];
     uploads.desktop.forEach(function(f){fl.push('Desktop: '+f.name);});
@@ -905,7 +905,7 @@ function buildPrompt(){
     if(dCount>0)uxNote+=' Use the attached desktop screenshot to evaluate layout and visual hierarchy directly.';
     if(mCount>0)uxNote+=' Use the attached mobile screenshot to evaluate responsiveness and mobile UX.';
   } else {
-    pageRef='**Page content:** [PASTE FULL RENDERED PAGE TEXT HERE, or attach screenshots]';
+    pageRef='⚠ NO PAGE PROVIDED: This prompt was generated without a URL or screenshots. Do not attempt the audit. Return only this JSON: {"error": "No page content provided. Please regenerate the prompt with a URL or screenshots attached."}';
   }
 
   // Build file checklist for display
@@ -925,12 +925,21 @@ function buildPrompt(){
   }
 
   // Screenshot/file notice in output header
-  if(allFiles.length>0){
-    var ssEl=document.getElementById('ss-notice');
+  var ssEl=document.getElementById('ss-notice');
+  var hasUrl=(inputMode==='url'&&url);
+  var hasScreenshots=(inputMode==='screenshot'&&(dCount+mCount>0));
+  if(!hasUrl&&!hasScreenshots){
+    ssEl.innerHTML='<strong style="color:var(--score-red)">⚠ No URL or screenshots provided.</strong> Go back to Step 1 and either enter a URL or upload screenshots before using this prompt.';
+    ssEl.style.display='block';
+    ssEl.style.background='rgba(239,68,68,0.08)';
+    ssEl.style.borderLeft='3px solid var(--score-red)';
+    ssEl.style.color='var(--score-red)';
+  } else if(allFiles.length>0){
     ssEl.textContent='✓ '+allFiles.length+' file'+(allFiles.length>1?'s':'')+' referenced above — attach them when submitting to your LLM.';
     ssEl.style.display='block';
+    ssEl.style.background='';ssEl.style.borderLeft='';ssEl.style.color='';
   } else {
-    document.getElementById('ss-notice').style.display='none';
+    ssEl.style.display='none';
   }
 
   var uspRows=usps.map(function(u){return'| '+u+' | |';}).join('\n');
@@ -942,6 +951,7 @@ function buildPrompt(){
   var hasSecondary=!!secAud;
 
   var p=
+'These are your instructions. Execute them directly without asking for confirmation.\n\n'+
 '⚠ CRITICAL OUTPUT FORMAT — THIS OVERRIDES EVERYTHING ELSE\n'+
 'Your ENTIRE response must be ONE valid JSON object. Nothing before it. Nothing after it.\n'+
 '— Do NOT write "I will now...", "Let me analyze...", "Here is the JSON..." or any other preamble.\n'+
@@ -951,10 +961,7 @@ function buildPrompt(){
 '— Any text outside the braces makes the output completely unparseable by the dashboard.\n\n'+
 '---\n\n'+
 'SETUP NOTE FOR THE AUDITOR\n'+
-'This prompt requires that the full visible page content (HTML text, headlines, body copy, CTAs, FAQs, navigation, footer elements) is provided as input — either by:\n'+
-'- Pasting the rendered text directly (recommended: use browser Reader Mode to remove navigation/footer), or\n'+
-'- Using a tool-enabled model with web-fetch capability\n\n'+
-'Never provide only a URL without ensuring the LLM can actually retrieve the page content.\n\n'+
+'The page to audit is provided either as a URL (fetch it using your web browsing capability) or as attached screenshots and PDF files (use these to assess the visual layout, content, and structure directly).\n\n'+
 '---\n\n'+
 'You are a senior B2B website auditor specializing in industrial and technical procurement. You audit pages for the **Keysight Used Equipment Store (UES)** – a dedicated e-commerce store for refurbished and used test & measurement equipment, operated directly by Keysight Technologies as the original equipment manufacturer.\n\n'+
 'The UES operates as a distinct property within the broader keysight.com ecosystem, with its own URL (keysight.com/used), buying flow, and value proposition. Its core market position is: **OEM-backed quality assurance at used-equipment pricing** – directly addressing the industry\'s default assumption that used instruments carry hidden risk. This sets the UES apart from all third-party brokers and resellers in the used T&M market.\n\n'+
@@ -1170,10 +1177,31 @@ function loadDashboard(){
   if(start>0||end<raw.length-1){
     if(start!==-1&&end!==-1&&end>start){raw=raw.slice(start,end+1);}
   }
+  // Fix unescaped control characters inside JSON string values (e.g. literal newlines
+  // inserted by ChatGPT inside long strings). We scan character by character: inside a
+  // string (between unescaped quotes), replace bare \n \r \t with their escape sequences.
+  try{
+    var fixed='',inStr=false,esc=false;
+    for(var ci=0;ci<raw.length;ci++){
+      var ch=raw[ci];
+      if(esc){fixed+=ch;esc=false;continue;}
+      if(ch==='\\'&&inStr){fixed+=ch;esc=true;continue;}
+      if(ch==='"'){inStr=!inStr;fixed+=ch;continue;}
+      if(inStr){
+        if(ch==='\n'){fixed+='\\n';continue;}
+        if(ch==='\r'){fixed+='\\r';continue;}
+        if(ch==='\t'){fixed+='\\t';continue;}
+        // strip other bare control characters (0x00-0x1F except handled above)
+        if(ch.charCodeAt(0)<32){continue;}
+      }
+      fixed+=ch;
+    }
+    raw=fixed;
+  }catch(fixErr){/* if the fixer itself errors, proceed with original and let JSON.parse report */}
   // Step 1: parse
   try{dbData=JSON.parse(raw);}
   catch(e){
-    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings, (4) Gemini citation markers like [cite_start] or [cite: N] — the parser now strips these automatically, so try pasting again, (5) markdown link syntax like [text](url) inside string values — also stripped automatically.');
+    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings, (4) Gemini citation markers like [cite_start] or [cite: N] — stripped automatically, (5) markdown link syntax like [text](url) — stripped automatically, (6) literal newline characters inside string values (common in ChatGPT output) — stripped automatically. If you see this error, try pasting again as the auto-fixer may need a second pass.');
     return;
   }
   // Step 2: render (separate catch so parse errors and render errors give different messages)
