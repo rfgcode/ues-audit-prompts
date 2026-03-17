@@ -1067,7 +1067,7 @@ uspRows+'\n\n'+
 '    "journeyStage": "'+phase+'",\n'+
 '    "auditDate": "[YYYY-MM-DD]"\n'+
 '  },\n'+
-'  "pageClassification": "[one paragraph: what kind of page, what it attempts, overall first impression, and whether it feels like a Caring Ruler]",\n'+
+'  "pageClassification": "[one paragraph: what kind of page, what it attempts, overall first impression, and whether it feels like a Caring Ruler] — NOTE: this field is at the ROOT level, NOT inside meta",\n'+
 '  "scores": {\n'+
 '    "ux": 0.0, "seo": 0.0, "llmReadability": 0.0, "llmRetrievability": 0.0,\n'+
 '    "pageGoalFit": 0.0, "journeyStageFit": 0.0,\n'+
@@ -1198,6 +1198,9 @@ function loadDashboard(){
     }
     raw=fixed;
   }catch(fixErr){/* if the fixer itself errors, proceed with original and let JSON.parse report */}
+  // Fix: LLMs sometimes nest pageClassification inside meta, producing a stray }
+  // Pattern: "pageClassification": "..."\n},\n"scores" → remove the stray }
+  raw=raw.replace(/(\"pageClassification\"\s*:\s*\"[^\"]*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
   // Step 1: parse
   try{dbData=JSON.parse(raw);}
   catch(e){
