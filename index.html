@@ -166,6 +166,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .db-load-btn{margin-top:12px;width:100%;padding:13px;background:var(--red);color:var(--white);border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background 0.13s;}
 .db-load-btn:hover{background:var(--red-dark);}
 .db-load-btn:disabled{background:var(--gray);color:var(--mid-gray);cursor:default;}
+.db-llm-select{flex:1;font-size:13px;padding:10px 13px;background:var(--white);border:1px solid var(--border);color:var(--text);font-family:var(--font);outline:none;border-radius:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%2397999B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;cursor:pointer;}
+.db-llm-select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(233,0,41,0.1);}
 .db-sample-link{font-size:11px;color:var(--text-dim);text-align:center;margin-top:14px;}
 .db-sample-link span{color:var(--red);cursor:pointer;text-decoration:underline;}
 
@@ -190,16 +192,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .db-tab:not(.active):hover{color:var(--text-mid);}
 
 /* Ring cards */
-.ring-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.ring-grid{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
 .ring-card{text-align:center;padding:22px 16px 18px;background:var(--white);border:1px solid var(--border);}
+.ring-card-composite{text-align:center;padding:22px 16px 18px;background:var(--black);border:1px solid var(--black);}
 .ring-label{font-size:11px;font-weight:700;color:var(--text-mid);margin-top:10px;}
+.ring-card-composite .ring-label{color:rgba(255,255,255,0.6);}
 .ring-sub{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.ring-card-composite .ring-sub{color:rgba(255,255,255,0.4);}
 .ring-score{font-size:22px;font-weight:700;font-family:'Courier New',monospace;}
+.ring-composite-eq{font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;letter-spacing:0.03em;}
 
 /* Score bars */
 .score-bar-row{margin-bottom:8px;}
-.score-bar-header{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--white);border:1px solid var(--border);cursor:pointer;transition:background 0.13s;}
-.score-bar-header:hover{background:var(--light-gray);}
+.score-bar-header{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--white);border:1px solid var(--border);}
+
 .score-bar-name{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:6px;}
 .score-bar-track{height:2px;background:var(--light-gray);}
 .score-bar-fill{height:100%;}
@@ -325,7 +331,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- ── Step 1: Page Identification ── -->
   <div class="step-card active" id="step-1">
     <div class="step-header">
-      <div class="step-badge">01 / 06</div>
+      <div class="step-badge">01 / 07</div>
       <div><div class="step-title">Page Identification</div><div class="step-desc">Provide either the page URL or upload screenshots. At least one is required.</div></div>
     </div>
     <div class="field-group">
@@ -335,7 +341,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="toggle-tab" id="tab-screenshot" onclick="switchTab('screenshot')">Upload Screenshots</button>
       </div>
       <div class="toggle-panel active" id="panel-url">
-        <div class="notice"><b>!</b><span>Only provide a URL if your LLM supports web-fetch. Otherwise, paste the full rendered page text (browser Reader Mode recommended to strip navigation/footer) alongside the generated prompt. For the persona context: Use the compressed persona snippet (8–10 lines) from the persona library. The full persona documentation remains the source document but should not be included in full in the prompt.</span></div>
+        <div class="notice"><b>!</b><span>Only share a URL if your LLM can access and fetch web content. Otherwise, upload a screenshot of the page using the toggle above and include it when providing the prompt to the LLM.</span></div>
         <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" />
         <div class="field-hint">The full page text must accompany this prompt for the LLM to perform the audit.</div>
       </div>
@@ -361,16 +367,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="field-group">
       <label class="field-label">Page Type <span class="req">*</span></label>
-      <select id="page-type" onchange="toggleCustom('page-type','custom-pt-wrap')">
+      <select id="page-type" onchange="toggleCustom('page-type','custom-pt-wrap');updatePageTypeHint()">
         <option value="">— Select page type —</option>
         <option value="Campaign Landing Page">Campaign Landing Page</option>
         <option value="SEO Category Page">SEO Category Page</option>
         <option value="Product Detail Page">Product Detail Page</option>
         <option value="Homepage">Homepage</option>
+        <option value="Educational / Awareness Page">Educational / Awareness Page</option>
         <option value="Blog / Editorial Page">Blog / Editorial Page</option>
         <option value="Comparison Page">Comparison Page</option>
         <option value="custom">Custom (specify below)</option>
       </select>
+      <div id="page-type-hint" class="field-hint" style="display:none;margin-top:5px;"></div>
     </div>
     <div class="field-group" id="custom-pt-wrap" style="display:none">
       <label class="field-label">Custom Page Type</label>
@@ -380,7 +388,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <label class="field-label">Primary Page Goal <span class="req">*</span></label>
       <select id="page-goal-select" onchange="toggleCustom('page-goal-select','custom-goal-wrap')">
         <option value="">— Select a goal —</option>
-        <option value="Match campaign promise, reduce friction, drive conversion">Match campaign promise, reduce friction, drive conversion</option>
         <option value="Drive organic traffic and capture inbound leads">Drive organic traffic and capture inbound leads</option>
         <option value="Educate and build awareness">Educate and build awareness</option>
         <option value="Generate quote requests or direct sales">Generate quote requests or direct sales</option>
@@ -392,13 +399,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <label class="field-label">Custom Goal</label>
       <input type="text" id="page-goal-custom" placeholder="Describe the primary page goal…" />
     </div>
+    <div class="field-group">
+      <label class="field-label">Audit Keywords / Search Terms <span class="opt-label">(optional)</span></label>
+      <input type="text" id="audit-keywords" placeholder="e.g. used oscilloscope, refurbished spectrum analyzer, Keysight warranty" />
+      <div class="field-hint">Comma-separated keywords important in the user journey for this page. The audit will evaluate how well the page targets and surfaces these terms.</div>
+    </div>
     <div class="nav-row"><span></span><button class="btn btn-red" onclick="goTo(2)">Next →</button></div>
   </div>
 
   <!-- ── Step 2: Audience ── -->
   <div class="step-card" id="step-2">
     <div class="step-header">
-      <div class="step-badge">02 / 06</div>
+      <div class="step-badge">02 / 07</div>
       <div><div class="step-title">Audience</div><div class="step-desc">Define who this page is built for. Select all that apply.</div></div>
     </div>
     <div class="field-group">
@@ -407,14 +419,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="pill pill-all" onclick="toggleAllPill(this,'primary-audience-pills')">All Roles</div>
         <div class="pill" onclick="togglePill(this)">R&amp;D Engineers</div>
         <div class="pill" onclick="togglePill(this)">Test Engineers</div>
+        <div class="pill" data-val="A/D Engineer" onclick="togglePill(this)">A/D Engineers</div>
         <div class="pill" onclick="togglePill(this)">QA Managers</div>
         <div class="pill" onclick="togglePill(this)">Lab Managers</div>
+        <div class="pill" onclick="togglePill(this)">Program Managers</div>
         <div class="pill" onclick="togglePill(this)">Procurement</div>
         <div class="pill" onclick="togglePill(this)">Purchasing</div>
-        <div class="pill" onclick="togglePill(this)">Program Managers</div>
       </div>
       <input type="text" id="primary-audience-custom" placeholder="Add a custom role…" style="margin-top:10px" />
       <div class="field-hint">Select one or more. Custom value appended if filled.</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Secondary Audience <span class="opt-label">(optional — leave blank to exclude)</span></label>
+      <input type="text" id="secondary-audience" placeholder="e.g. Program managers in Aerospace Defense, Procurement" />
+      <div class="field-hint">If blank, the secondary audience dimension will be omitted from the prompt.</div>
     </div>
     <div class="field-group">
       <label class="field-label">Industry <span class="req">*</span></label>
@@ -425,15 +443,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="pill" onclick="togglePill(this)">Semiconductor</div>
         <div class="pill" onclick="togglePill(this)">5G / Wireless</div>
         <div class="pill" onclick="togglePill(this)">General Electronics</div>
+        <div class="pill" onclick="togglePill(this)">Education</div>
       </div>
       <input type="text" id="industry-custom" placeholder="Add a custom industry…" style="margin-top:10px" />
       <div class="field-hint">Select one or more. Custom value appended if filled.</div>
     </div>
-    <hr class="section-rule">
     <div class="field-group">
-      <label class="field-label">Secondary Audience <span class="opt-label">(optional — leave blank to exclude)</span></label>
-      <input type="text" id="secondary-audience" placeholder="e.g. Program managers in Aerospace Defense, Procurement" />
-      <div class="field-hint">If blank, the secondary audience dimension will be omitted from the prompt.</div>
+      <label class="field-label">Target Region <span class="opt-label">(optional)</span></label>
+      <select id="target-region">
+        <option value="">— Select region (or leave blank for global) —</option>
+        <option value="Worldwide">Worldwide</option>
+        <option value="United States">United States</option>
+        <option value="Europe">Europe</option>
+        <option value="China">China</option>
+        <option value="Japan">Japan</option>
+        <option value="South Korea">South Korea</option>
+      </select>
+      <div class="field-hint">Specifies the regional market context for this audit.</div>
     </div>
     <div class="nav-row">
       <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
@@ -444,7 +470,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- ── Step 3: Journey Stage & Traffic ── -->
   <div class="step-card" id="step-3">
     <div class="step-header">
-      <div class="step-badge">03 / 06</div>
+      <div class="step-badge">03 / 07</div>
       <div><div class="step-title">Customer Journey Stage &amp; Traffic</div><div class="step-desc">Calibrate the audit's strategic expectations.</div></div>
     </div>
     <div class="field-group">
@@ -458,14 +484,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="field-hint" style="margin-top:8px">Select one or more. Awareness = educate &amp; build trust · Consideration = compare &amp; qualify · Purchase = remove friction &amp; close · Retention = reinforce &amp; reorder</div>
     </div>
     <div class="field-group">
-      <label class="field-label">Primary Traffic Source <span class="req">*</span></label>
+      <label class="field-label">Traffic Source <span class="req">*</span></label>
       <div class="pill-group" id="traffic-pills">
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">LinkedIn Campaign</div>
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">Google Ads</div>
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">Organic Search (SEO)</div>
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">Email / Newsletter</div>
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">Trade Show / Event</div>
-        <div class="pill" onclick="singlePill(this,'traffic-pills')">Direct / Referral</div>
+        <div class="pill" onclick="togglePill(this)">Organic Search (SEO)</div>
+        <div class="pill" onclick="togglePill(this)">Organic Search (LLM)</div>
+        <div class="pill" onclick="togglePill(this)">Google Ads</div>
+        <div class="pill" onclick="togglePill(this)">LinkedIn Campaign</div>
+        <div class="pill" onclick="togglePill(this)">Email / Newsletter</div>
+        <div class="pill" onclick="togglePill(this)">Trade Show / Event</div>
+        <div class="pill" onclick="togglePill(this)">Direct / Referral</div>
       </div>
       <input type="text" id="traffic-custom" placeholder="Or describe a custom traffic source…" style="margin-top:10px" />
     </div>
@@ -478,10 +505,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- ── Step 4: USPs ── -->
   <div class="step-card" id="step-4">
     <div class="step-header">
-      <div class="step-badge">04 / 06</div>
+      <div class="step-badge">04 / 07</div>
       <div><div class="step-title">USPs to Evaluate</div><div class="step-desc">All USPs are pre-selected. Deselect any not relevant to this page.</div></div>
     </div>
     <div class="check-grid" id="usp-list" style="grid-template-columns:1fr 1fr;">
+      <div class="check-item on" onclick="toggleCheck(this)" data-val="Value for money — prominence of value-for-money messaging and price-to-quality positioning for used instruments (key differentiator vs new and vs third-party resellers)"><div class="chkbox">✓</div>Value for Money</div>
       <div class="check-item on" onclick="toggleCheck(this)" data-val="OEM trust (Keysight-certified, original manufacturer)"><div class="chkbox">✓</div>OEM Trust / Certification</div>
       <div class="check-item on" onclick="toggleCheck(this)" data-val="Warranty"><div class="chkbox">✓</div>Warranty</div>
       <div class="check-item on" onclick="toggleCheck(this)" data-val="Calibration / quality assurance"><div class="chkbox">✓</div>Calibration / QA</div>
@@ -499,50 +527,80 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
-  <!-- ── Step 5: Scoring ── -->
+  <!-- ── Step 5: Comparison ── -->
   <div class="step-card" id="step-5">
     <div class="step-header">
-      <div class="step-badge">05 / 06</div>
-      <div><div class="step-title">Scoring Mode</div><div class="step-desc">Set the composite score weighting and add any additional context.</div></div>
+      <div class="step-badge">05 / 07</div>
+      <div>
+        <div class="step-title">Comparison <span style="font-size:11px;font-weight:400;color:var(--text-dim);margin-left:6px;">(optional)</span></div>
+        <div class="step-desc">Add competitor or reference pages to compare against this audit. Provide URLs and/or upload screenshots or PDFs.</div>
+      </div>
+    </div>
+    <div class="notice"><b>ℹ</b><span>This step is fully optional. When provided, the audit will compare the main page against each reference on overall UI/UX, content depth, LLM readability &amp; retrievability, and flag strengths and weaknesses relative to each.</span></div>
+    <div class="field-group">
+      <label class="field-label">Comparison Page URLs <span class="opt-label">(optional)</span></label>
+      <div id="comp-url-list">
+        <div class="comp-url-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="url" class="comp-url-input" placeholder="https://competitor.com/page…" style="flex:1" />
+          <button type="button" onclick="removeCompUrl(this)" class="btn btn-ghost" style="padding:10px 14px;flex-shrink:0;">✕</button>
+        </div>
+      </div>
+      <button type="button" onclick="addCompUrl()" class="btn btn-ghost" style="margin-top:6px;font-size:12px;">+ Add another URL</button>
     </div>
     <div class="field-group">
-      <label class="field-label">Score Weighting Preset <span class="req">*</span></label>
-      <div class="pill-group" id="weight-pills">
-        <div class="pill on" onclick="singlePill(this,'weight-pills');updateWeightHint('standard')" data-val="standard">Standard — Campaign / Category</div>
-        <div class="pill" onclick="singlePill(this,'weight-pills');updateWeightHint('seo')" data-val="seo">SEO-Balanced</div>
-        <div class="pill" onclick="singlePill(this,'weight-pills');updateWeightHint('custom')" data-val="custom">Custom</div>
+      <label class="field-label">Comparison Screenshots / PDFs <span class="opt-label">(optional)</span></label>
+      <div class="upload-zone" id="comp-zone" onclick="document.getElementById('comp-file-input').click()" style="margin-bottom:10px;">
+        <input type="file" id="comp-file-input" accept="image/*,.pdf" multiple style="display:none" onchange="handleCompUpload(event)" />
+        <div class="upload-icon">📎</div>
+        <div class="upload-title">Upload comparison screenshots or PDFs</div>
+        <div class="upload-sub">PNG, JPG or PDF · Multiple files allowed · Click or drag</div>
+        <div class="upload-badge badge-opt">Optional</div>
       </div>
-      <div class="field-hint" id="weight-hint" style="margin-top:8px">Core Quality 45% · Strategic Fit 55%</div>
+      <div id="comp-previews" class="preview-strip"></div>
     </div>
-    <div id="custom-weights" style="display:none">
-      <div class="row-2">
-        <div class="field-group"><label class="field-label">Core Quality Weight (%)</label><input type="text" id="wt-core" value="45" /></div>
-        <div class="field-group"><label class="field-label">Strategic Fit Weight (%)</label><input type="text" id="wt-strategic" value="55" /></div>
-      </div>
-      <div class="field-hint">Must sum to 100.</div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goTo(4)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(6)">Next →</button>
     </div>
-    <div class="field-group" style="margin-top:20px">
+  </div>
+
+  <!-- ── Step 6: Additional Notes ── -->
+  <div class="step-card" id="step-6">
+    <div class="step-header">
+      <div class="step-badge">06 / 07</div>
+      <div><div class="step-title">Additional Notes</div><div class="step-desc">Add any extra context or focus areas for this audit.</div></div>
+    </div>
+    <div class="field-group">
       <label class="field-label">Additional Audit Notes <span class="opt-label">(optional)</span></label>
       <textarea id="extra-notes" placeholder="Specific focus areas, known issues, or persona snippet to include…"></textarea>
     </div>
     <div class="nav-row">
-      <button class="btn btn-ghost" onclick="goTo(4)">← Back</button>
-      <button class="btn btn-red" onclick="goTo(6)">Generate Prompt →</button>
+      <button class="btn btn-ghost" onclick="goTo(5)">← Back</button>
+      <button class="btn btn-red" onclick="goTo(7)">Generate Prompt →</button>
     </div>
   </div>
 
-  <!-- ── Step 6: Output ── -->
-  <div class="step-card" id="step-6">
+  <!-- ── Step 7: Output ── -->
+  <div class="step-card" id="step-7">
     <div class="step-header">
-      <div class="step-badge">06 / 06</div>
+      <div class="step-badge">07 / 07</div>
       <div><div class="step-title">Your Audit Prompt</div><div class="step-desc">Copy the prompt and paste it — together with your page content — into any LLM.</div></div>
     </div>
-    <div class="notice"><b>ℹ</b><span>Include the full rendered page text alongside this prompt. If you uploaded screenshots, attach those files too. Use browser Reader Mode to strip navigation and footer before pasting.</span></div>
+    <div class="notice"><b>ℹ</b><span>Include the full rendered page text alongside this prompt. If you uploaded screenshots, attach those files too.</span></div>
     <div id="ss-notice" class="ss-notice" style="display:none"></div>
+    <div id="file-checklist" style="display:none;background:var(--white);border:1px solid var(--border);border-left:3px solid var(--dark-gray);padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin-bottom:10px;">📎 Files to attach to your LLM</div>
+      <div id="file-checklist-items" style="font-size:12px;color:var(--text-mid);line-height:1.8;"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;border-top:1px solid var(--light-gray);padding-top:8px;">Attach all files listed above when submitting the prompt to your LLM.</div>
+    </div>
     <div class="output-box" id="output-text" onclick="selectOutput()" title="Click to select all"></div>
     <div class="copy-row">
       <button class="btn btn-dark" onclick="copyPrompt()">⎘ Copy Prompt</button>
       <span class="copy-feedback" id="copy-feedback"></span>
+    </div>
+    <div class="nav-row" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--light-gray);">
+      <button class="btn btn-ghost" onclick="goTo(6)">← Back</button>
+      <span></span>
     </div>
     <div class="restart-row"><button class="btn-restart" onclick="location.reload()">↺ Start Over</button></div>
   </div>
@@ -570,7 +628,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="db-step"><div class="db-step-num"><span>3</span></div><div class="db-step-text">Paste it here and render</div></div>
       </div>
       <textarea id="db-json-input" class="db-textarea" placeholder='{&#10;  "meta": { "url": "...", "pageType": "...", "journeyStage": "...", ... },&#10;  "scores": { "ux": 6.5, "caringRulerAlignment": 5.0, ... },&#10;  ...&#10;}'></textarea>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;">If the LLM added introductory text before the JSON, the dashboard will strip it automatically. Just paste the full response.</div>
       <div id="db-error" class="db-error" style="display:none"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+        <label style="font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-mid);white-space:nowrap;">LLM Used</label>
+        <select id="db-llm-select" class="db-llm-select">
+          <option value="">— Select model —</option>
+          <option value="Claude">Claude</option>
+          <option value="ChatGPT">ChatGPT</option>
+          <option value="Gemini">Gemini</option>
+          <option value="Grok">Grok</option>
+          <option value="Perplexity">Perplexity</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
       <button class="db-load-btn" id="db-load-btn" onclick="loadDashboard()" disabled>Render Dashboard →</button>
       <p class="db-sample-link">No JSON yet? <span onclick="loadSample()">Load a sample audit</span></p>
     </div>
@@ -581,10 +652,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="db-header">
       <div class="db-header-inner">
         <div>
-          <div id="db-page-type" class="db-page-type-label">—</div>
+          <div id="db-page-headline" style="font-size:18px;font-weight:700;color:var(--black);letter-spacing:-0.01em;margin-bottom:4px;">—</div>
           <div id="db-page-url" class="db-page-url-label">—</div>
         </div>
         <div class="db-meta-tags">
+          <span id="db-tag-llm" class="db-tag" style="display:none;background:var(--dark-gray);color:var(--white);border-color:var(--dark-gray);">—</span>
           <span id="db-tag-stage" class="db-tag">—</span>
           <span id="db-tag-traffic" class="db-tag">—</span>
           <span id="db-tag-date" class="db-tag">—</span>
@@ -601,6 +673,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="db-tab" onclick="setDbTab('usps',this)">USP Coverage</button>
         <button class="db-tab" onclick="setDbTab('risks',this)">Risks &amp; Opps</button>
         <button class="db-tab" onclick="setDbTab('rewrites',this)">Rewrites</button>
+        <button class="db-tab" id="db-tab-btn-compare" onclick="setDbTab('compare',this)" style="display:none">Comparison</button>
       </div>
     </div>
     <div class="db-shell">
@@ -610,6 +683,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="db-tab-usps"     style="display:none"></div>
       <div id="db-tab-risks"    style="display:none"></div>
       <div id="db-tab-rewrites" style="display:none"></div>
+      <div id="db-tab-compare"  style="display:none"></div>
     </div>
   </div>
 
@@ -630,8 +704,9 @@ function setMode(m){
 /* ════════════════════════════════════════════════════
    BUILDER
 ════════════════════════════════════════════════════ */
-var TOTAL=6,cur=1;
+var TOTAL=7,cur=1;
 var uploads={desktop:[],mobile:[]};
+var compUploads=[];
 var inputMode='url';
 
 function goTo(n){
@@ -682,17 +757,60 @@ function singlePill(el,gid){document.getElementById(gid).querySelectorAll('.pill
 function readPills(gid){var g=document.getElementById(gid);if(!g)return[];var o=[];g.querySelectorAll('.pill.on').forEach(function(p){o.push(p.dataset.val||p.textContent.trim());});return o;}
 function toggleCheck(el){el.classList.toggle('on');el.querySelector('.chkbox').textContent=el.classList.contains('on')?'✓':'';}
 function getUSPs(){var o=[];document.querySelectorAll('#usp-list .check-item.on').forEach(function(el){o.push(el.dataset.val);});return o;}
-function updateWeightHint(v){
-  var h={standard:'Core Quality 45% · Strategic Fit 55%',seo:'Core Quality 50% · Strategic Fit 50%',custom:'Enter custom weights below. Must sum to 100.'};
-  document.getElementById('weight-hint').textContent=h[v]||'';
-  document.getElementById('custom-weights').style.display=v==='custom'?'block':'none';
+function updateWeightHint(){}
+function getWeights(){return{core:45,strategic:55};}
+
+// Comparison upload handlers
+function handleCompUpload(ev){
+  var f=Array.from(ev.target.files);if(!f.length)return;
+  compUploads=compUploads.concat(f);renderCompPreviews();
+  document.getElementById('comp-zone').classList.add('has-files');
 }
-function getWeights(){
-  var v=(readPills('weight-pills')[0]||'standard');
-  if(v==='seo')return{core:50,strategic:50};
-  if(v==='custom')return{core:parseInt(document.getElementById('wt-core').value)||45,strategic:parseInt(document.getElementById('wt-strategic').value)||55};
-  return{core:45,strategic:55};
+function renderCompPreviews(){
+  var strip=document.getElementById('comp-previews');if(!strip)return;strip.innerHTML='';
+  compUploads.forEach(function(file,idx){
+    var item=document.createElement('div');item.className='preview-item';
+    if(file.type&&file.type.startsWith('image/')){var img=document.createElement('img');img.src=URL.createObjectURL(file);item.appendChild(img);}
+    else{var icon=document.createElement('div');icon.className='preview-pdf';icon.textContent='📄';item.appendChild(icon);}
+    var lbl=document.createElement('div');lbl.className='preview-name';lbl.textContent=file.name;item.appendChild(lbl);
+    var rm=document.createElement('button');rm.className='remove-btn';rm.textContent='×';
+    rm.onclick=function(e){e.stopPropagation();compUploads.splice(idx,1);renderCompPreviews();if(!compUploads.length)document.getElementById('comp-zone').classList.remove('has-files');};
+    item.appendChild(rm);strip.appendChild(item);
+  });
 }
+function addCompUrl(){
+  var list=document.getElementById('comp-url-list');
+  var row=document.createElement('div');row.className='comp-url-row';row.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
+  row.innerHTML='<input type="url" class="comp-url-input" placeholder="https://competitor.com/page…" style="flex:1"/><button type="button" onclick="removeCompUrl(this)" class="btn btn-ghost" style="padding:10px 14px;flex-shrink:0;">✕</button>';
+  list.appendChild(row);
+}
+function removeCompUrl(btn){
+  var row=btn.parentElement;
+  var list=document.getElementById('comp-url-list');
+  if(list.querySelectorAll('.comp-url-row').length>1){row.remove();}
+  else{row.querySelector('input').value='';}
+}
+function getCompUrls(){
+  var urls=[];document.querySelectorAll('.comp-url-input').forEach(function(inp){var v=inp.value.trim();if(v)urls.push(v);});return urls;
+}
+
+// Page type hints
+var PAGE_TYPE_HINTS={
+  'Campaign Landing Page':'Paid traffic landing page designed to match an ad promise and convert visitors quickly. Audit focuses on message match, CTA clarity, and above-the-fold trust.',
+  'SEO Category Page':'Organic search entry page ranking for category-level keywords (e.g. "used oscilloscopes"). Audit focuses on keyword alignment, content depth, and LLM retrievability.',
+  'Product Detail Page':'Individual instrument listing page. Audit focuses on spec completeness, trust signals (calibration, warranty), CTA friction, and model-level LLM retrievability.',
+  'Homepage':'Top-level brand entry point for direct/referral visitors. Audit focuses on brand clarity, USP coverage above fold, navigation logic, and persona breadth.',
+  'Educational / Awareness Page':'Top-of-funnel page designed to build category understanding and OEM trust with first-time or research-stage visitors. Audit focuses on clarity of the value proposition, absence of hard-sell pressure, trust-building depth, and readiness to advance visitors into consideration.',
+  'Blog / Editorial Page':'Educational or thought-leadership content. Audit focuses on content quality, E-E-A-T signals, LLM readability, and organic discovery potential.',
+  'Comparison Page':'Page comparing UES instruments against alternatives. Audit focuses on objectivity, factual depth, trust signals, and conversion framing.'
+};
+function updatePageTypeHint(){
+  var val=document.getElementById('page-type').value;
+  var hint=document.getElementById('page-type-hint');
+  if(PAGE_TYPE_HINTS[val]){hint.textContent=PAGE_TYPE_HINTS[val];hint.style.display='block';}
+  else{hint.style.display='none';}
+}
+
 function handleUpload(ev,type){var f=Array.from(ev.target.files);if(!f.length)return;uploads[type]=uploads[type].concat(f);renderPreviews(type);document.getElementById(type+'-zone').classList.add('has-files');}
 function renderPreviews(type){
   var strip=document.getElementById(type+'-previews');strip.innerHTML='';
@@ -727,12 +845,53 @@ function buildPrompt(){
   if(indCustom)indPills.push(indCustom);
   var industry=indPills.length?indPills.join(', '):'[industry]';
   var secAud=document.getElementById('secondary-audience').value.trim();
+  var regionEl=document.getElementById('target-region');
+  var region=regionEl?regionEl.value.trim():'';
+  var keywordsEl=document.getElementById('audit-keywords');
+  var keywords=keywordsEl?keywordsEl.value.trim():'';
   var phaseSel=readPills('phase-pills');
   var phase=phaseSel.length?phaseSel.join(' / '):'[journey stage]';
   var traffSel=readPills('traffic-pills'),traffCustom=document.getElementById('traffic-custom').value.trim();
-  var traffic=traffSel.length?traffSel[0]:(traffCustom||'[traffic source]');
+  if(traffCustom)traffSel.push(traffCustom);
+  var traffic=traffSel.length?traffSel.join(', '):'[traffic source]';
   var usps=getUSPs(),weights=getWeights();
   var notes=document.getElementById('extra-notes').value.trim();
+
+  // A/D Engineer persona snippet
+  var hasAD=paPills.indexOf('A/D Engineer')!==-1||paPills.indexOf('A/D Engineers')!==-1;
+  var adSnippet=hasAD?
+'\n**A/D Engineer Persona Context:**\n'+
+'Aerospace & Defense Engineer Role: RF/radar, avionics, electrical hardware, or mechanical engineer at aerospace/defense OEM or contractor. Responsible for keeping mission-critical test programs on time, compliant, and spec-accurate.\n'+
+'Top pain points: Calibration continuity and audit-readiness; risk of downtime if instrument fails or goes EOL; uncertainty whether used equipment will hold spec in their environment.\n'+
+'Key objections: "Used equipment might not hold spec or pass audits." "Calibration history may be incomplete." "Integration into my existing test scripts could fail."\n'+
+'Decision criteria: Traceable calibration certificate; warranty coverage; firmware/option parity with current setup; SCPI/MATLAB/Python compatibility; fast delivery to avoid missed milestones.\n'+
+'Tone expectation: Technical-first, specific, evidence-based. No marketing buzzwords. Confidence comes from data, not claims.\n'
+:'';
+
+  // Comparison pages block
+  var compUrls=getCompUrls();
+  var hasComparison=(compUrls.length>0||compUploads.length>0);
+  var compBlock='';
+  if(hasComparison){
+    compBlock='\n---\n\n### COMPARISON PAGES\n\n'+
+'After completing the main audit, compare the audited page against each reference page provided below. Include a `"comparison"` array in your JSON output — one object per reference page — using the structure defined in the OUTPUT FORMAT section.\n\n'+
+'For each reference page, assess it side by side with the audited page on:\n'+
+'1. Overall UI/UX — layout, hierarchy, clarity, CTA strength\n'+
+'2. Content depth and specificity — factual density, use-case coverage, persona relevance\n'+
+'3. LLM Readability and Retrievability — structured content, citable facts, named entities\n'+
+'4. Strengths of the reference page vs the audited page\n'+
+'5. Weaknesses of the reference page vs the audited page\n\n';
+    if(compUrls.length){
+      compBlock+='**Comparison URLs:**\n';
+      compUrls.forEach(function(u,i){compBlock+='- [Reference '+(i+1)+']: '+u+'\n';});
+      compBlock+='\n';
+    }
+    if(compUploads.length){
+      compBlock+='**Comparison files attached:**\n';
+      compUploads.forEach(function(f){compBlock+='- '+f.name+'\n';});
+      compBlock+='\n';
+    }
+  }
 
   // Page reference block
   var pageRef='',uxNote='';
@@ -749,21 +908,48 @@ function buildPrompt(){
     pageRef='**Page content:** [PASTE FULL RENDERED PAGE TEXT HERE, or attach screenshots]';
   }
 
-  // Screenshot notice
-  if(inputMode==='screenshot'&&(dCount+mCount>0)){
-    var parts=[];if(dCount>0)parts.push(dCount+' desktop');if(mCount>0)parts.push(mCount+' mobile');
+  // Build file checklist for display
+  var allFiles=[];
+  uploads.desktop.forEach(function(f){allFiles.push({label:'Page (desktop)',name:f.name});});
+  uploads.mobile.forEach(function(f){allFiles.push({label:'Page (mobile)',name:f.name});});
+  compUploads.forEach(function(f){allFiles.push({label:'Comparison',name:f.name});});
+  var checklistEl=document.getElementById('file-checklist');
+  var checklistItems=document.getElementById('file-checklist-items');
+  if(allFiles.length>0){
+    checklistItems.innerHTML=allFiles.map(function(f){
+      return '<div style="display:flex;align-items:center;gap:8px;"><span style="width:14px;height:14px;border:1.5px solid var(--dark-gray);display:inline-flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;">☐</span><span><strong style="color:var(--text-mid);">'+f.label+':</strong> '+f.name+'</span></div>';
+    }).join('');
+    checklistEl.style.display='block';
+  } else {
+    checklistEl.style.display='none';
+  }
+
+  // Screenshot/file notice in output header
+  if(allFiles.length>0){
     var ssEl=document.getElementById('ss-notice');
-    ssEl.textContent='✓ '+parts.join(' + ')+' screenshot'+(dCount+mCount>1?'s':'')+' referenced — attach these files when submitting to your LLM.';
+    ssEl.textContent='✓ '+allFiles.length+' file'+(allFiles.length>1?'s':'')+' referenced above — attach them when submitting to your LLM.';
     ssEl.style.display='block';
-  } else { document.getElementById('ss-notice').style.display='none'; }
+  } else {
+    document.getElementById('ss-notice').style.display='none';
+  }
 
   var uspRows=usps.map(function(u){return'| '+u+' | |';}).join('\n');
   var notesBlock=notes?'\n**Additional notes / persona snippet:** '+notes+'\n':'';
+  var keywordsBlock=keywords?'\n**Key audit keywords / search terms:** '+keywords+'\nEvaluate how effectively the page targets, surfaces, and is optimised around these terms — both for human visitors and for LLM retrieval.\n':'';
+  var regionBlock=region?'**Target region:** '+region+'\n':'';
   var today=todayStr();
   var cw=weights.core/100,sw=weights.strategic/100;
   var hasSecondary=!!secAud;
 
   var p=
+'⚠ CRITICAL OUTPUT FORMAT — THIS OVERRIDES EVERYTHING ELSE\n'+
+'Your ENTIRE response must be ONE valid JSON object. Nothing before it. Nothing after it.\n'+
+'— Do NOT write "I will now...", "Let me analyze...", "Here is the JSON..." or any other preamble.\n'+
+'— Do NOT write any summary, commentary, or explanation after the JSON.\n'+
+'— Do NOT use markdown, headers, bullet points, or code fences.\n'+
+'— The very first character of your response must be { and the very last must be }.\n'+
+'— Any text outside the braces makes the output completely unparseable by the dashboard.\n\n'+
+'---\n\n'+
 'SETUP NOTE FOR THE AUDITOR\n'+
 'This prompt requires that the full visible page content (HTML text, headlines, body copy, CTAs, FAQs, navigation, footer elements) is provided as input — either by:\n'+
 '- Pasting the rendered text directly (recommended: use browser Reader Mode to remove navigation/footer), or\n'+
@@ -785,9 +971,12 @@ pageRef+'\n\n'+
 '**Customer journey stage:** '+phase+'\n'+
 '**Primary audience:** '+primaryAud+' — Industry: '+industry+'\n'+
 (hasSecondary?'**Secondary audience:** '+secAud+'\n':'')+
-'**Primary traffic source:** '+traffic+'\n'+
+'**Traffic source:** '+traffic+'\n'+
+regionBlock+
 '**Benchmark reference:** Evaluate relative to best-practice B2B landing pages in the test & measurement industry.\n'+
+keywordsBlock+
 notesBlock+
+adSnippet+
 '\n---\n\n'+
 '### SCORING DIMENSIONS\n\n'+
 'Evaluate the page on a **0–10 scale** for each dimension. Apply scoring anchors strictly:\n\n'+
@@ -832,7 +1021,8 @@ notesBlock+
 '**8. Persona Fit – Secondary Audience ('+secAud+')**\n'+
 'Does the page address the secondary audience\'s concerns (e.g. procurement: compliance, budget justification, vendor reliability, TCO documentation)? Note explicitly if the secondary persona is completely absent.\n\n':'')+
 '**9. USP Coverage**\n'+
-'Assess how explicitly and convincingly the page covers the following UES USPs. Credit only explicit, specific mentions – not vague implications.\n\n'+
+'Assess how explicitly and convincingly the page covers the following UES USPs. Credit only explicit, specific mentions – not vague implications. Only evaluate the USPs listed below — these were specifically selected for this audit.\n\n'+
+'> **Value for Money note:** For the "Value for money" USP, specifically evaluate the prominence and effectiveness of value-for-money messaging. As an OEM selling used equipment, pricing and value positioning relative to new instruments is a core differentiator vs. third-party resellers. Assess whether this is communicated with sufficient specificity and confidence to resolve buyer hesitation.\n\n'+
 '| USP | Check |\n'+
 '|-----|-------|\n'+
 uspRows+'\n\n'+
@@ -844,28 +1034,26 @@ uspRows+'\n\n'+
 '= (UX × 0.35) + (SEO × 0.25) + (LLM Readability × 0.20) + (LLM Retrievability × 0.20)\n\n'+
 '**Strategic Fit Score** (strategic alignment)\n'+
 '= (Page Goal Fit × 0.20) + (Journey Stage Fit × 0.20) + (Persona Fit Primary × 0.25) + '+(hasSecondary?'(Persona Fit Secondary × 0.10) + ':'')+'(USP Coverage × '+(hasSecondary?'0.15':'0.25')+') + (Caring Ruler Alignment × 0.10)\n\n'+
-'**Final Page Effectiveness Score**\n'+
+'**Overall Page Effectiveness Score**\n'+
 '= (Core Quality Score × '+cw+') + (Strategic Fit Score × '+sw+')\n\n'+
 '> Rationale: Strategic fit is weighted higher than technical execution because a strategically misaligned page fails regardless of technical quality.\n\n'+
 '---\n\n'+
 '### OUTPUT FORMAT\n\n'+
-'**CRITICAL: Your entire response must be one single valid JSON object and nothing else.**\n\n'+
-'Rules that must not be broken:\n'+
-'- Start your response with `{` — nothing before it, not even a blank line\n'+
-'- End your response with `}` — nothing after it\n'+
-'- Do NOT wrap in markdown code fences (no ```json or ``` anywhere)\n'+
-'- Do NOT add any explanation, preamble, summary, or commentary before or after the JSON\n'+
-'- Use ONLY straight double quote characters `"` (U+0022) as JSON delimiters — never curly/smart quotes `\u201c` `\u201d`\n'+
-'- Use ONLY straight apostrophes `\'` inside string values — never curly single quotes `\u2018` `\u2019`\n'+
-'- Do NOT include image references, file attachments, or special placeholder characters\n'+
-'- All string values must be plain text — no markdown formatting (no **, no __, no # headers) inside JSON strings\n'+
-'- All score values must be plain decimal numbers (e.g. `6.5`) — not strings, not ranges, not null\n'+
-'- `personaSecondary` must always be present in both `scores` and `rationale` — use `null` if no secondary audience was defined\n'+
-'- Every backslash inside a string value must be escaped as `\\\\`\n\n'+
+'REMINDER: Your entire response must be one single valid JSON object and nothing else. This output is parsed directly by a machine — any prose, markdown, commentary, or explanation will break it completely.\n\n'+
+'Strict rules:\n'+
+'- Start with `{` — nothing before it, not even a blank line\n'+
+'- End with `}` — nothing after it\n'+
+'- No markdown code fences (no ```json or ``` anywhere)\n'+
+'- No explanation, preamble, summary, or commentary before or after the JSON\n'+
+'- Straight double quotes `"` only — never curly/smart quotes\n'+
+'- Plain text string values only — no **, no __, no # headers inside JSON strings\n'+
+'- Score values must be plain decimal numbers (e.g. `6.5`) — not strings, not ranges\n'+
+'- `personaSecondary` must be present in both `scores` and `rationale` — use `null` if no secondary audience\n\n'+
 'The JSON must follow this exact structure:\n\n'+
 '{\n'+
 '  "meta": {\n'+
-'    "url": "'+(url||'[page url]')+'",\n'+
+'    "url": "'+(url||'[full page URL, or empty string if not available — do NOT invent or guess a URL]')+'",\n'+
+'    "pageName": "[short descriptive page name, e.g. Education & Research Hub — always provide this, especially when no URL is available]",\n'+
 '    "pageType": "'+pageType+'",\n'+
 '    "audience": "'+primaryAud+(hasSecondary?' / '+secAud:'')+'",\n'+
 '    "trafficSource": "'+traffic+'",\n'+
@@ -885,16 +1073,7 @@ uspRows+'\n\n'+
 '    "personaPrimary": "...", "personaSecondary": '+(hasSecondary?'"2-4 sentences"':'null')+', "uspCoverage": "...", "caringRulerAlignment": "..."\n'+
 '  },\n'+
 '  "uspCoverage": [\n'+
-'    { "name": "OEM Trust", "status": "explicit|implied|missing" },\n'+
-'    { "name": "Warranty", "status": "..." },\n'+
-'    { "name": "Calibration / QA", "status": "..." },\n'+
-'    { "name": "Technical Support", "status": "..." },\n'+
-'    { "name": "Fast Delivery", "status": "..." },\n'+
-'    { "name": "Availability", "status": "..." },\n'+
-'    { "name": "Cost Savings / TCO", "status": "..." },\n'+
-'    { "name": "Sustainability", "status": "..." },\n'+
-'    { "name": "Hard-to-find Models", "status": "..." },\n'+
-'    { "name": "Trade-in Program", "status": "..." }\n'+
+usps.map(function(u){return'    { "name": "'+u.replace(/\s*—.*/,'').trim()+'", "status": "explicit|implied|missing" }';}).join(',\n')+'\n'+
 '  ],\n'+
 '  "risks": [\n'+
 '    { "rank": 1, "text": "problem statement", "consequence": "consequence if unaddressed" },\n'+
@@ -919,7 +1098,18 @@ uspRows+'\n\n'+
 '      { "q": "...", "a": "..." },\n'+
 '      { "q": "...", "a": "..." }\n'+
 '    ]\n'+
-'  }\n'+
+'  }'+(hasComparison?',\n'+
+'  "comparison": [\n'+
+'    {\n'+
+'      "reference": "[URL or filename of the reference page]",\n'+
+'      "referenceName": "[short descriptive name for this reference page]",\n'+
+'      "ux":         { "auditedPage": "2-3 sentences on audited page UX", "referencePage": "2-3 sentences on reference page UX", "verdict": "Audited page stronger|Reference page stronger|Comparable" },\n'+
+'      "content":    { "auditedPage": "...", "referencePage": "...", "verdict": "..." },\n'+
+'      "llm":        { "auditedPage": "...", "referencePage": "...", "verdict": "..." },\n'+
+'      "strengths":  ["strength of reference page vs audited page", "..."],\n'+
+'      "weaknesses": ["weakness of reference page vs audited page", "..."]\n'+
+'    }\n'+
+'  ]':'')+'\n'+
 '}\n\n'+
 '---\n\n'+
 '### AUDIT CONDUCT RULES\n\n'+
@@ -932,8 +1122,10 @@ uspRows+'\n\n'+
 '7. Always evaluate LLM Retrievability across both sub-dimensions: product retrieval and knowledge retrieval.\n'+
 '8. Always check for Caring Ruler misalignment: purely transactional, generic, or unsubstantiated content is a red flag regardless of other scores.\n'+
 (hasSecondary?'9. For the secondary audience ('+secAud+'), flag any missing compliance, budget justification, or vendor-reliability content explicitly.\n':'')+
+compBlock+
 '\n---\n\n'+
-'*Prompt Version: 1.0 | Keysight UES | Last updated: '+today+'*';
+'*Prompt Version: 1.0 | Keysight UES | Date created: '+today+'*\n\n'+
+'⚠ FINAL REMINDER: Respond with JSON only. Start with { and end with }. No text outside the braces.';
 
   document.getElementById('output-text').textContent=p;
 }
@@ -967,6 +1159,11 @@ function loadDashboard(){
     .replace(/\u2013|\u2014/g,'-')    // en-dash / em-dash → hyphen (safe in JSON values)
     .replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\uFFFD\uFFFC\uFFFE]/g,'') // BOM, ZWSP, invisible formatters, placeholders
     .replace(/\r\n/g,'\n')            // normalise line endings
+    // Gemini grounding citations — [cite_start] markers and [cite: N, N] references
+    .replace(/\[cite_start\]/g,'')
+    .replace(/\[cite:\s*[\d,\s]+\]/g,'')
+    // Markdown link syntax inside JSON strings: [label](url) → url
+    .replace(/\[([^\]]*)\]\(([^)]+)\)/g,'$2')
     .trim();
   // Strip any leading/trailing non-JSON wrapper text (markdown fences, prose)
   var start=raw.indexOf('{'), end=raw.lastIndexOf('}');
@@ -976,7 +1173,7 @@ function loadDashboard(){
   // Step 1: parse
   try{dbData=JSON.parse(raw);}
   catch(e){
-    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings.');
+    showDbError('⚠ Could not parse JSON. Parse error: '+e.message+'\n\nCommon causes: (1) markdown code fences — remove the ``` lines, (2) text before { or after } — delete everything outside the braces, (3) smart quote characters instead of straight quotes — check your LLM settings, (4) Gemini citation markers like [cite_start] or [cite: N] — the parser now strips these automatically, so try pasting again, (5) markdown link syntax like [text](url) inside string values — also stripped automatically.');
     return;
   }
   // Step 2: render (separate catch so parse errors and render errors give different messages)
@@ -998,55 +1195,67 @@ function resetDashboard(){
   document.getElementById('db-dashboard-screen').style.display='none';
   document.getElementById('db-json-input').value='';
   document.getElementById('db-load-btn').disabled=true;
+  document.getElementById('db-llm-select').value='';
+  document.getElementById('db-tag-llm').style.display='none';
+  document.getElementById('db-tab-btn-compare').style.display='none';
 }
 
 function sc(s){return s>=7.5?'var(--score-green)':s>=5?'var(--score-amber)':'var(--score-red)';}
 function sl(s){return s>=7.5?'Strong':s>=5?'Partial':'Weak';}
 
-function ring(score){
-  var color=sc(score),r=28,circ=2*Math.PI*r,pct=(score/10)*circ;
-  return '<svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg);display:block;margin:0 auto">'
-    +'<circle cx="36" cy="36" r="'+r+'" fill="none" stroke="var(--light-gray)" stroke-width="5"/>'
-    +'<circle cx="36" cy="36" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="5" stroke-dasharray="'+pct+' '+circ+'" stroke-linecap="round"/>'
-    +'</svg>';
+// Canvas-based ring — renders reliably in Safari and html2canvas PDF export
+function ring(score,size,trackCol,fillCol){
+  size=size||72;
+  var c=document.createElement('canvas');
+  c.width=size*2;c.height=size*2; // 2x for retina
+  var ctx=c.getContext('2d');
+  var cx=size,cy=size,r=size*0.72,lw=size*0.14;
+  ctx.clearRect(0,0,size*2,size*2);
+  // Track
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle=trackCol||'#EBEBEB';ctx.lineWidth=lw;ctx.stroke();
+  // Fill arc — start at -90deg (top), sweep clockwise
+  var sweep=(score/10)*Math.PI*2;
+  ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+sweep);
+  ctx.strokeStyle=fillCol||sc(score).replace('var(--score-green)','#22c55e').replace('var(--score-amber)','#f59e0b').replace('var(--score-red)','#ef4444');
+  ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+  // Return data URL at display size
+  return c.toDataURL('image/png');
+}
+// Helper to resolve CSS score color to hex for canvas
+function scHex(score){return score>=7.5?'#22c55e':score>=5?'#f59e0b':'#ef4444';}
+// Render a ring as an <img> tag (avoids SVG rendering issues in Safari/html2canvas)
+function ringImg(score,size,trackCol){
+  var sz=size||72;
+  var src=ring(score,sz,trackCol);
+  return '<img src="'+src+'" width="'+sz+'" height="'+sz+'" style="display:block;margin:0 auto;" />';
 }
 
 function scoreBar(label,score,weight,rationale){
-  var id='sb'+Math.random().toString(36).slice(2,8);
-  var color=sc(score),pct=(score/10)*100;
+  var color=scHex(score),pct=(score/10)*100;
   return '<div class="score-bar-row">'
-    +'<div class="score-bar-header" id="h'+id+'" onclick="toggleBar(\''+id+'\')">'
+    +'<div class="score-bar-header" style="cursor:default;">'
     +'<div style="flex:1"><div class="score-bar-name">'+label+'</div>'
     +'<div class="score-bar-track"><div class="score-bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>'
     +'<div class="score-bar-meta">'
     +(weight?'<span class="score-bar-weight">w '+weight+'</span>':'')
     +'<span class="score-bar-num" style="color:'+color+'">'+score.toFixed(1)+'</span>'
     +'<span class="score-bar-badge" style="background:'+color+'22;color:'+color+'">'+sl(score)+'</span>'
-    +'<span class="score-bar-arrow" id="a'+id+'">▼</span>'
     +'</div></div>'
-    +'<div class="score-bar-body" id="b'+id+'" style="display:none">'+rationale+'</div>'
+    +'<div class="score-bar-body">'+rationale+'</div>'
     +'</div>';
-}
-function toggleBar(id){
-  var b=document.getElementById('b'+id),a=document.getElementById('a'+id);
-  var open=b.style.display!=='none';
-  b.style.display=open?'none':'block';
-  a.textContent=open?'▼':'▲';
 }
 
 function renderDashboard(){
   var d=dbData,s=d.scores,r=d.rationale;
 
   // ── Safe helpers ──────────────────────────────────────────
-  // n(): coerce any score value to a number; missing/null/NaN → 0
   function n(v){return(v!==undefined&&v!==null&&!isNaN(Number(v)))?Number(v):0;}
-  // san(): strip ChatGPT image-placeholder chars (U+FFFC/U+FFFD) and trim
   function san(v){if(!v&&v!==0)return'';var s=String(v);for(var i=s.length-1;i>=0;i--){var c=s.charCodeAt(i);if(c===0xFFFC||c===0xFFFD||c===0xFFFE)s=s.slice(0,i)+s.slice(i+1);}return s.trim();}
   // ─────────────────────────────────────────────────────────
 
-  // v3 weights — all score reads wrapped in n()
+  // Score calculations
   var cq=n(s.ux)*0.35+n(s.seo)*0.25+n(s.llmReadability)*0.20+n(s.llmRetrievability)*0.20;
-  // personaSecondary is optional — treat null/undefined/0 as absent
   var hasSecondary=(s.personaSecondary!==undefined&&s.personaSecondary!==null&&n(s.personaSecondary)>0);
   var jsf=n(s.journeyStageFit||s.buyingPhaseFit);
   var sf=n(s.pageGoalFit)*0.20+jsf*0.20+n(s.personaPrimary)*0.25
@@ -1055,22 +1264,113 @@ function renderDashboard(){
     +n(s.caringRulerAlignment)*0.10;
   var fe=cq*0.45+sf*0.55;
 
-  // Header
-  document.getElementById('db-page-type').textContent=san(d.meta.pageType)||'—';
-  document.getElementById('db-page-url').textContent=san(d.meta.url)||'—';
+  // ── Header: combined headline ──────────────────────────────
+  var pageType=san(d.meta.pageType)||'';
+  var rawUrl=san(d.meta.url)||'';
+  // Treat non-URL values (filler text from LLM) as absent
+  var isRealUrl=/^https?:\/\/.+/i.test(rawUrl.trim());
+  var pageUrl=isRealUrl?rawUrl.trim():'';
+
+  // Derive a meaningful page name in order of preference:
+  // 1. Last path segment of a real URL
+  // 2. meta.pageName or meta.pageTitle if present
+  // 3. First sentence of pageClassification (usually names the page)
+  // 4. Audience string
+  var pageName='';
+
+  if(pageUrl){
+    try{
+      var urlObj=new URL(pageUrl);
+      var segs=urlObj.pathname.replace(/\/$/,'').split('/').filter(Boolean);
+      if(segs.length){
+        pageName=segs[segs.length-1].replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+      }
+    }catch(e){}
+  }
+
+  if(!pageName&&san(d.meta.pageName)) pageName=san(d.meta.pageName);
+  if(!pageName&&san(d.meta.pageTitle)) pageName=san(d.meta.pageTitle);
+
+  // Extract from pageClassification — look for audience/topic patterns
+  if(!pageName&&d.pageClassification){
+    var cls=san(d.pageClassification).slice(0,300);
+    // "aimed at X" / "targeting X" / "for X" gives us the audience/topic
+    var m=cls.match(/(?:aimed at|targeting|designed for|built for)\s+([a-z][^,\.]{4,60}?)(?:,|\.|$)/i);
+    if(m){
+      var extracted=m[1].trim();
+      // Capitalise first letter, cap length, clean up
+      pageName=extracted.charAt(0).toUpperCase()+extracted.slice(1);
+      if(pageName.length>50)pageName=pageName.slice(0,50).replace(/\s+\S*$/,'')+'…';
+    }
+  }
+
+  if(!pageName&&san(d.meta.audience)) pageName=san(d.meta.audience).split('/')[0].trim();
+
+  // Headline = "Page Name · Page Type" or just "Page Type"
+  var headline=pageName?(pageName+' · '+pageType):pageType;
+  document.getElementById('db-page-headline').textContent=headline||'—';
+  // Show real URL or a clean "—" rather than LLM filler text
+  document.getElementById('db-page-url').textContent=pageUrl||'—';
   document.getElementById('db-tag-stage').textContent=san(d.meta.journeyStage||d.meta.buyingPhase)||'—';
   document.getElementById('db-tag-traffic').textContent=san(d.meta.trafficSource)||'—';
   document.getElementById('db-tag-date').textContent=san(d.meta.auditDate)||'—';
+  // LLM tag — read from the selector on the paste screen
+  var llmVal=document.getElementById('db-llm-select').value;
+  var llmTag=document.getElementById('db-tag-llm');
+  if(llmVal){llmTag.textContent='⚙ '+llmVal;llmTag.style.display='inline-block';}
+  else{llmTag.style.display='none';}
 
-  // OVERVIEW — rings
-  var rings='<div class="ring-grid">';
-  [[cq,'Core Quality','UX · SEO · LLM'],[sf,'Strategic Fit','Goal · Stage · Persona · USP · CR'],[fe,'Final Effectiveness','Weighted composite']].forEach(function(x){
-    var c=sc(x[0]);
-    rings+='<div class="ring-card">'+ring(x[0])
-      +'<div style="margin-top:8px"><span class="ring-score" style="color:'+c+'">'+x[0].toFixed(1)+'</span></div>'
-      +'<div class="ring-label">'+x[1]+'</div><div class="ring-sub">'+x[2]+'</div></div>';
-  });
-  rings+='</div>';
+  // ── OVERVIEW — rings with visual hierarchy ────────────────
+  // Two component tiles side by side, Overall Effectiveness spanning full width below
+  var cqColor=scHex(cq), sfColor=scHex(sf), feColor=scHex(fe);
+  var rings=
+    '<div style="background:var(--white);border:1px solid var(--border);padding:28px 24px;margin-bottom:24px;">'
+      // Row: three rings with operators between them
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:0;">'
+
+        // Core Quality
+        +'<div style="text-align:center;flex:1;">'
+          +ringImg(cq,80,'#EBEBEB')
+          +'<div style="margin-top:10px;font-size:20px;font-weight:700;font-family:\'Courier New\',monospace;color:'+cqColor+'">'+cq.toFixed(1)+'</div>'
+          +'<div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-top:4px;">Core Quality</div>'
+          +'<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">UX · SEO · LLM</div>'
+        +'</div>'
+
+        // Plus operator
+        +'<div style="font-size:22px;font-weight:300;color:var(--mid-gray);padding:0 12px;flex-shrink:0;margin-bottom:28px;">+</div>'
+
+        // Strategic Fit
+        +'<div style="text-align:center;flex:1;">'
+          +ringImg(sf,80,'#EBEBEB')
+          +'<div style="margin-top:10px;font-size:20px;font-weight:700;font-family:\'Courier New\',monospace;color:'+sfColor+'">'+sf.toFixed(1)+'</div>'
+          +'<div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-top:4px;">Strategic Fit</div>'
+          +'<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Goal · Stage · Persona · USP · CR</div>'
+        +'</div>'
+
+        // Equals operator
+        +'<div style="font-size:22px;font-weight:300;color:var(--mid-gray);padding:0 12px;flex-shrink:0;margin-bottom:28px;">=</div>'
+
+        // Overall Effectiveness — visually larger
+        +'<div style="text-align:center;flex:1.2;background:var(--bg);border:1px solid var(--border);padding:16px 12px;">'
+          +ringImg(fe,88,'#EBEBEB',feColor)
+          +'<div style="margin-top:10px;font-size:26px;font-weight:700;font-family:\'Courier New\',monospace;color:'+feColor+'">'+fe.toFixed(1)+'</div>'
+          +'<div style="font-size:11px;font-weight:700;color:var(--text-mid);margin-top:4px;">Overall Effectiveness</div>'
+          +'<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Weighted composite</div>'
+        +'</div>'
+
+      +'</div>'
+
+      // Formula footnote
+      +'<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--light-gray);text-align:center;font-size:11px;color:var(--text-dim);">'
+        +'<span style="color:'+cqColor+'">'+cq.toFixed(1)+' CQ</span>'
+        +' <span style="color:var(--mid-gray);">× 45%</span>'
+        +'<span style="color:var(--mid-gray);padding:0 8px;">+</span>'
+        +'<span style="color:'+sfColor+'">'+sf.toFixed(1)+' SF</span>'
+        +' <span style="color:var(--mid-gray);">× 55%</span>'
+        +'<span style="color:var(--mid-gray);padding:0 8px;">=</span>'
+        +'<span style="color:'+feColor+';font-weight:700;">'+fe.toFixed(1)+' Overall Effectiveness</span>'
+      +'</div>'
+    +'</div>';
 
   var classification='<div class="db-classification"><div class="db-classification-label">Page Classification</div>'+san(d.pageClassification||'—')+'</div>';
 
@@ -1085,7 +1385,7 @@ function renderDashboard(){
   ];
   if(hasSecondary)miniRows.splice(8,0,['Persona – Secondary',n(s.personaSecondary)]);
   miniRows.forEach(function(row){
-    var c=sc(row[1]);
+    var c=scHex(row[1]);
     mini+='<div class="mini-row"><div class="mini-label">'+row[0]+'</div>'
       +'<div class="mini-track"><div class="mini-fill" style="width:'+((row[1]/10)*100)+'%;background:'+c+'"></div></div>'
       +'<span class="mini-score" style="color:'+c+'">'+row[1].toFixed(1)+'</span></div>';
@@ -1095,14 +1395,14 @@ function renderDashboard(){
 
   // CORE QUALITY
   document.getElementById('db-tab-quality').innerHTML=
-    '<div class="db-section-label">Core Quality Score: '+cq.toFixed(2)+' — click a row to expand the rationale</div>'
+    '<div class="db-section-label">Core Quality Score: '+cq.toFixed(2)+'</div>'
     +scoreBar('UX — User Experience',n(s.ux),'0.35',san(r.ux))
     +scoreBar('SEO',n(s.seo),'0.25',san(r.seo))
     +scoreBar('LLM Readability',n(s.llmReadability),'0.20',san(r.llmReadability))
     +scoreBar('LLM Retrievability',n(s.llmRetrievability),'0.20',san(r.llmRetrievability));
 
   // STRATEGIC FIT
-  var stratHTML='<div class="db-section-label">Strategic Fit Score: '+sf.toFixed(2)+' — click a row to expand the rationale</div>'
+  var stratHTML='<div class="db-section-label">Strategic Fit Score: '+sf.toFixed(2)+'</div>'
     +scoreBar('Page Goal Fit',n(s.pageGoalFit),'0.20',san(r.pageGoalFit))
     +scoreBar('Journey Stage Fit',jsf,'0.20',san(r.journeyStageFit||r.buyingPhaseFit||''))
     +scoreBar('Persona Fit – Primary',n(s.personaPrimary),'0.25',san(r.personaPrimary));
@@ -1151,13 +1451,70 @@ function renderDashboard(){
   rwHTML+='</div>';
   document.getElementById('db-tab-rewrites').innerHTML=rwHTML;
 
+  // COMPARISON — conditional tab
+  var compBtn=document.getElementById('db-tab-btn-compare');
+  if(d.comparison&&d.comparison.length){
+    compBtn.style.display='';
+    var compHTML='<div class="db-section-label">Page Comparison — '+d.comparison.length+' Reference Page'+(d.comparison.length>1?'s':'')+'</div>';
+    d.comparison.forEach(function(comp,idx){
+      var refName=san(comp.referenceName||comp.reference||'Reference '+(idx+1));
+      compHTML+='<div style="background:var(--white);border:1px solid var(--border);margin-bottom:20px;">';
+      // Header
+      compHTML+='<div style="padding:14px 16px;border-bottom:1px solid var(--light-gray);background:var(--bg);">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--black);">'+refName+'</div>'
+        +(comp.reference&&comp.reference!==refName?'<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">'+san(comp.reference)+'</div>':'')
+        +'</div>';
+      // Dimension rows
+      var dims=[
+        {key:'ux',label:'UI / UX'},
+        {key:'content',label:'Content Depth'},
+        {key:'llm',label:'LLM Readability & Retrievability'}
+      ];
+      dims.forEach(function(dim){
+        var data=comp[dim.key];
+        if(!data)return;
+        var verdict=san(data.verdict||'');
+        var verdictColor=verdict.toLowerCase().indexOf('audited')!==-1?'var(--score-green)':verdict.toLowerCase().indexOf('reference')!==-1?'var(--score-amber)':'var(--text-dim)';
+        compHTML+='<div style="display:grid;grid-template-columns:120px 1fr 1fr;border-bottom:1px solid var(--light-gray);">'
+          +'<div style="padding:12px 14px;background:var(--bg);border-right:1px solid var(--light-gray);font-size:11px;font-weight:700;color:var(--text-mid);display:flex;align-items:center;">'+dim.label+'</div>'
+          +'<div style="padding:12px 14px;border-right:1px solid var(--light-gray);">'
+            +'<div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--red);margin-bottom:5px;">Audited Page</div>'
+            +'<div style="font-size:12px;color:var(--text-mid);line-height:1.6;">'+san(data.auditedPage||'—')+'</div>'
+          +'</div>'
+          +'<div style="padding:12px 14px;">'
+            +'<div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--dark-gray);margin-bottom:5px;">'+refName+'</div>'
+            +'<div style="font-size:12px;color:var(--text-mid);line-height:1.6;">'+san(data.referencePage||'—')+'</div>'
+          +'</div>'
+          +'</div>';
+        // Verdict strip
+        compHTML+='<div style="padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--light-gray);font-size:11px;font-weight:600;color:'+verdictColor+';">▸ '+verdict+'</div>';
+      });
+      // Strengths & Weaknesses
+      if((comp.strengths&&comp.strengths.length)||(comp.weaknesses&&comp.weaknesses.length)){
+        compHTML+='<div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--light-gray);">';
+        compHTML+='<div style="padding:14px 16px;border-right:1px solid var(--light-gray);">'
+          +'<div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--score-green);margin-bottom:8px;">Strengths of reference page</div>';
+        (comp.strengths||[]).forEach(function(s){compHTML+='<div style="font-size:12px;color:var(--text-mid);line-height:1.6;padding:3px 0;border-bottom:1px solid var(--light-gray);">+ '+san(s)+'</div>';});
+        compHTML+='</div>';
+        compHTML+='<div style="padding:14px 16px;">'
+          +'<div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--score-red);margin-bottom:8px;">Weaknesses of reference page</div>';
+        (comp.weaknesses||[]).forEach(function(w){compHTML+='<div style="font-size:12px;color:var(--text-mid);line-height:1.6;padding:3px 0;border-bottom:1px solid var(--light-gray);">− '+san(w)+'</div>';});
+        compHTML+='</div></div>';
+      }
+      compHTML+='</div>';
+    });
+    document.getElementById('db-tab-compare').innerHTML=compHTML;
+  } else {
+    compBtn.style.display='none';
+  }
+
   document.getElementById('db-paste-screen').style.display='none';
   document.getElementById('db-dashboard-screen').style.display='block';
   setDbTab('overview',document.querySelector('.db-tab'));
 }
 
 function setDbTab(id,btn){
-  ['overview','quality','strategy','usps','risks','rewrites'].forEach(function(t){
+  ['overview','quality','strategy','usps','risks','rewrites','compare'].forEach(function(t){
     document.getElementById('db-tab-'+t).style.display=t===id?'block':'none';
   });
   document.querySelectorAll('.db-tab').forEach(function(b){b.classList.remove('active');});
@@ -1179,15 +1536,18 @@ async function exportPDF(){
 
   var tabs=['overview','quality','strategy','usps','risks','rewrites'];
   var tabLabels=['Overview','Core Quality','Strategic Fit','USP Coverage','Risks & Opportunities','Rewrites'];
+  if(dbData&&dbData.comparison&&dbData.comparison.length){
+    tabs.push('compare');tabLabels.push('Comparison');
+  }
 
   // Get audit meta for header
-  var pageTypeEl=document.getElementById('db-page-type');
+  var pageHeadlineEl=document.getElementById('db-page-headline');
   var pageUrlEl=document.getElementById('db-page-url');
-  var tagStage=document.getElementById('db-tag-stage');
   var tagDate=document.getElementById('db-tag-date');
-  var auditTitle=pageTypeEl?pageTypeEl.textContent:'UES Audit';
+  var auditTitle=pageHeadlineEl?pageHeadlineEl.textContent:'UES Audit';
   var auditUrl=pageUrlEl?pageUrlEl.textContent:'';
   var auditDate=tagDate?tagDate.textContent:'';
+  var auditLLM=document.getElementById('db-llm-select').value||'';
 
   // Save current active tab so we can restore it
   var activeTabEl=document.querySelector('.db-tab.active');
@@ -1243,17 +1603,20 @@ async function exportPDF(){
     pdf.setFont('helvetica','normal');
     pdf.setFontSize(7);
     pdf.setTextColor(151,153,155);
-    pdf.text(auditUrl||auditTitle,margin,14.5);
+    // Show headline (page name · page type) then URL
+    var pdfSubtitle=auditTitle+(auditUrl&&auditUrl!=='—'?' · '+auditUrl:'');
+    pdf.text(pdfSubtitle,margin,14.5);
     // Tab name right-aligned
     pdf.setFont('helvetica','bold');
     pdf.setFontSize(8);
     pdf.setTextColor(233,0,41);
     pdf.text(tabLabels[ti].toUpperCase(),pageW-margin,10,{align:'right'});
-    // Date
+    // Date + LLM model right-aligned on second line
     pdf.setFont('helvetica','normal');
     pdf.setFontSize(7);
     pdf.setTextColor(151,153,155);
-    pdf.text(auditDate,pageW-margin,14.5,{align:'right'});
+    var pdfMeta=auditDate+(auditLLM?' · '+auditLLM:'');
+    pdf.text(pdfMeta,pageW-margin,14.5,{align:'right'});
 
     // Thin separator
     pdf.setDrawColor(217,217,214);
@@ -1316,50 +1679,50 @@ async function exportPDF(){
    SAMPLE DATA (v3 schema)
 ════════════════════════════════════════════════════ */
 var SAMPLE={
-  meta:{url:"https://www.keysight.com/used/de/en/ip/automotive",pageType:"Campaign Landing Page",audience:"R&D Engineers / Procurement – Automotive",trafficSource:"LinkedIn Campaign",journeyStage:"Awareness",auditDate:"2026-03-10"},
-  pageClassification:"A campaign-oriented landing page targeting automotive engineers via LinkedIn. The page attempts to establish category relevance for used test equipment in automotive R&D contexts, but reads more like a generic product listing than a purposeful Awareness page. It fails to resolve the visitor's core skepticism about used equipment quality — the central tension of the UES value proposition — within the first scroll. First impression: structurally sparse, with weak USP articulation, no Caring Ruler tone, and insufficient persona-specific depth for a TOFU campaign audience.",
-  scores:{ux:5.5,seo:4.5,llmReadability:4.0,llmRetrievability:3.0,pageGoalFit:4.5,journeyStageFit:5.0,personaPrimary:4.0,personaSecondary:2.0,uspCoverage:3.5,caringRulerAlignment:3.0},
+  meta:{url:"https://www.example-oes.com/used-equipment/oscilloscopes",pageType:"SEO Category Page",audience:"Test Engineers / Lab Managers",trafficSource:"Organic Search (SEO)",journeyStage:"Consideration",auditDate:"2026-01-15"},
+  pageClassification:"A well-structured SEO category page targeting test engineers searching for used oscilloscopes. The page establishes clear OEM authority early and addresses quality concerns with explicit calibration and warranty statements above the fold. Content depth is strong for the Consideration stage — multiple product tiers are presented with relevant specifications and a visible trust framework. Caring Ruler positioning is largely achieved: the tone is confident without being dismissive, and buyer hesitation is proactively addressed through structured FAQs and prominent reassurance signals. Minor gaps remain in LLM retrievability and secondary persona coverage.",
+  scores:{ux:8.0,seo:7.5,llmReadability:7.5,llmRetrievability:7.0,pageGoalFit:8.0,journeyStageFit:8.5,personaPrimary:8.0,personaSecondary:6.5,uspCoverage:7.5,caringRulerAlignment:7.5},
   rationale:{
-    ux:"Basic structure present with a single CTA, but visual hierarchy is weak. No trust signals above the fold. Mobile layout untested. CTA copy is generic and does not reflect campaign context. The page does not address visitor skepticism about used equipment quality quickly enough to prevent bounce.",
-    seo:"H1 present but keyword alignment to 'automotive test equipment' is shallow. No visible structured data. Internal linking sparse. Meta signals not assessable from page view.",
-    llmReadability:"Content is too vague for reliable LLM interpretation. Key entities (product categories, use cases, brand authority) are underspecified. Marketing language dominates over factual density, making it difficult for an LLM to extract meaningful, citable content.",
-    llmRetrievability:"Product Retrieval: Weak — no model numbers or specific category terms visible. Knowledge Retrieval: Very weak — no FAQ content, no citable statistics, no E-E-A-T signals. Page would not be cited by any LLM when answering either product or trust questions.",
-    pageGoalFit:"Campaign promise matching is weak — the page does not clearly reflect the LinkedIn ad message. CTA hierarchy unclear. Conversion friction unaddressed. Page goal of driving conversion is structurally unsupported.",
-    journeyStageFit:"Some awareness-stage content present, but insufficient education for first-time visitors. No 'why used equipment?' narrative. No OEM trust signal above the fold. Drops visitors without building enough confidence to advance in the funnel.",
-    personaPrimary:"Engineers are not spoken to with technical specificity. No use-case scenarios, no product category depth, no application context for automotive R&D workflows. Language is generic B2C retail rather than B2B technical.",
-    personaSecondary:"Procurement audience is entirely absent. No content addressing compliance, budget justification, TCO documentation, or vendor reliability frameworks.",
-    uspCoverage:"Only cost savings is weakly implied. Warranty, calibration, OEM trust, technical support, and sustainability are not mentioned. Trade-in and hard-to-find models fully absent. USP coverage is critically low for an Awareness page that needs to build trust.",
-    caringRulerAlignment:"The page reads as purely transactional — product listings without empathy or OEM authority. There is no acknowledgement of buyer hesitation, no reassurance language, and no demonstration of expertise. This is the opposite of the Caring Ruler positioning."
+    ux:"Visual hierarchy is clear, with OEM trust signals and calibration statements placed above the fold. CTA placement is logical and friction is low. Product filtering is intuitive for engineers scanning by spec. Mobile layout inferred to be functional. Minor improvement possible in making the warranty badge more visually prominent on smaller viewports.",
+    seo:"H1 and H2 structure is well-aligned with target keyword clusters around used oscilloscopes and refurbished test equipment. Internal linking to related category pages is present. Structured data indicators suggest product schema may be partially implemented. Meta signals not fully assessable from page view alone.",
+    llmReadability:"Content is semantically clear with named entities, product categories, and brand signals well-specified. FAQs are structured to mirror real buyer queries and are easily parseable by an LLM. Some marketing sections lean slightly abstract, but the overall factual density is above average for this category.",
+    llmRetrievability:"Product Retrieval: Good — category terms, OEM brand identity, and specification ranges are explicit and named. Knowledge Retrieval: Solid — FAQ section contains citable trust statements and warranty specifics. The page would likely be surfaced in AI-assisted vendor comparisons, though adding more statistics and third-party validation signals would further strengthen retrievability.",
+    pageGoalFit:"The page is well-aligned with its goal of supporting product discovery and consideration-stage evaluation. CTA hierarchy guides visitors toward either browsing by category or contacting sales. Conversion friction is low. The page would benefit from a clearer secondary CTA for procurement-stage visitors who need quote or compliance documentation.",
+    journeyStageFit:"Content depth and tone are well-matched to the Consideration stage. Comparative framing between new and used equipment is present and reassuring. The page educates on OEM quality standards without over-selling, which is appropriate for engineers at this stage. No mismatched Purchase-stage pressure detected.",
+    personaPrimary:"Test engineers are addressed with appropriate technical specificity — bandwidth ranges, calibration traceability, and firmware compatibility are all referenced. Language register is professional and B2B appropriate. Use-case context could be expanded with application-specific examples to push toward a higher score.",
+    personaSecondary:"Lab managers as a secondary persona are partially addressed through TCO and availability messaging, but budget justification documentation and vendor compliance frameworks are not explicitly surfaced. Adding a dedicated procurement reference section would close this gap.",
+    uspCoverage:"OEM trust, warranty, and calibration are explicitly and convincingly covered. Cost savings and availability are well-represented. Technical support visibility is adequate. Sustainability and trade-in program are present but could be more prominent. Hard-to-find models section exists but lacks depth.",
+    caringRulerAlignment:"The page reads as confident and authoritative without being transactional or dismissive. Buyer hesitation about used equipment quality is acknowledged and directly resolved with OEM-backed guarantees. The tone reflects the Caring Ruler positioning well — a few sections drift toward product-listing mode, but the overall experience maintains empathy and expertise."
   },
   uspCoverage:[
-    {name:"OEM Trust",status:"missing"},{name:"Warranty",status:"missing"},
-    {name:"Calibration / QA",status:"missing"},{name:"Technical Support",status:"missing"},
-    {name:"Fast Delivery",status:"implied"},{name:"Availability",status:"implied"},
-    {name:"Cost Savings / TCO",status:"implied"},{name:"Sustainability",status:"missing"},
-    {name:"Hard-to-find Models",status:"missing"},{name:"Trade-in Program",status:"missing"}
+    {name:"OEM Trust",status:"explicit"},{name:"Warranty",status:"explicit"},
+    {name:"Calibration / QA",status:"explicit"},{name:"Technical Support",status:"implied"},
+    {name:"Fast Delivery",status:"implied"},{name:"Availability",status:"explicit"},
+    {name:"Cost Savings / TCO",status:"explicit"},{name:"Sustainability",status:"implied"},
+    {name:"Hard-to-find Models",status:"implied"},{name:"Trade-in Program",status:"implied"}
   ],
   risks:[
-    {rank:1,text:"No trust signals above fold",consequence:"LinkedIn visitors bounce before scrolling — wasted ad spend and no conversion."},
-    {rank:2,text:"Generic CTA with no campaign continuity",consequence:"Breaks message match from LinkedIn ad, reducing conversion rate significantly."},
-    {rank:3,text:"Zero LLM retrievability",consequence:"Page will not appear in AI-assisted vendor research via ChatGPT or Perplexity."},
-    {rank:4,text:"Procurement persona completely absent",consequence:"Budget approvers find no relevant content and disengage — stalling purchase decisions."},
-    {rank:5,text:"No Caring Ruler tone or empathy signals",consequence:"Page feels transactional and undifferentiated from third-party resellers, undermining OEM authority."}
+    {rank:1,text:"Secondary persona (procurement) not explicitly addressed",consequence:"Budget approvers and lab managers may disengage without finding compliance or vendor documentation, slowing purchase decisions."},
+    {rank:2,text:"LLM retrievability could be stronger with more citable data points",consequence:"Page may be underrepresented in AI-assisted vendor research if competitors publish stronger factual and statistical content."},
+    {rank:3,text:"Sustainability USP is implied rather than explicit",consequence:"Misses an opportunity to differentiate on circular economy credentials, particularly relevant for buyers with ESG reporting requirements."},
+    {rank:4,text:"Technical support visibility is inconsistent across product tiers",consequence:"Engineers evaluating post-purchase support may not find sufficient reassurance, increasing hesitation for higher-value instrument categories."},
+    {rank:5,text:"No application-specific use-case content for primary persona",consequence:"Test engineers in specialised domains may not immediately recognise that the product range fits their workflow, reducing relevance signals."}
   ],
   opportunities:[
-    {rank:1,text:"Add warranty + calibration trust block above fold",benefit:"Directly addresses the #1 objection in used equipment buying and reduces bounce."},
-    {rank:2,text:"Write 5 automotive-specific FAQs addressing quality and compliance",benefit:"Boosts LLM retrievability and captures long-tail search traffic from engineers."},
-    {rank:3,text:"Insert a TCO calculator or cost-saving proof point",benefit:"Gives procurement a budget justification tool and addresses secondary persona directly."},
-    {rank:4,text:"Rewrite page intro with Caring Ruler tone — acknowledge hesitation, then resolve it",benefit:"Differentiates UES from brokers and builds the trust needed for Awareness-stage visitors to advance."},
-    {rank:5,text:"Add sustainability section with circular economy framing",benefit:"Aligns with automotive OEM ESG mandates and adds a missing USP explicitly."}
+    {rank:1,text:"Add a dedicated procurement and compliance reference section",benefit:"Directly addresses the secondary persona gap and accelerates purchase decisions for lab managers and procurement teams."},
+    {rank:2,text:"Enrich FAQs with specific statistics and third-party validation references",benefit:"Significantly improves LLM knowledge retrievability and strengthens E-E-A-T signals for organic search."},
+    {rank:3,text:"Expand sustainability section with circular economy metrics and ESG framing",benefit:"Converts an implied USP into an explicit differentiator and captures buyers with sustainability mandates."},
+    {rank:4,text:"Add application-specific content blocks for 2-3 core engineering use cases",benefit:"Increases persona relevance for specialised test engineers and improves time-on-page for high-intent visitors."},
+    {rank:5,text:"Surface technical support contact and response time SLAs more prominently",benefit:"Removes a common late-stage objection and reinforces OEM-backed confidence across all product tiers."}
   ],
   rewrites:{
-    hero:{current:"Used Test Equipment for Automotive",suggested:"Keysight-Certified Used Equipment for Automotive R&D — Warranted, Calibrated, Backed by the OEM",rationale:"Names brand authority and OEM-seller status, addresses the two primary quality objections, and signals delivery readiness. Caring Ruler in action: confident (Ruler) + resolves hesitation (Caring)."},
-    subheading:{current:"Find the right instruments for your automotive applications.",suggested:"Cut instrumentation costs by up to 50% without compromising test integrity. Every unit calibrated to factory spec, warranted, and backed by Keysight technical support — not a third-party broker.",rationale:"Leads with TCO benefit, immediately resolves the quality objection, and differentiates from resellers. Relevant for both engineer (quality) and procurement (cost)."},
-    cta:{current:"Shop Now",suggested:"Browse Automotive Test Equipment",rationale:"Context-specific and lower friction than 'Shop Now', which reads as consumer commerce rather than B2B procurement."},
+    hero:{current:"Used Oscilloscopes — Browse Our Range",suggested:"OEM-Certified Used Oscilloscopes — Calibrated, Warranted, Ready to Ship",rationale:"Leads with OEM certification to immediately differentiate from third-party resellers, then resolves the two primary quality objections in a single line. Caring Ruler balance: authoritative (Ruler) and reassuring (Caring)."},
+    subheading:{current:"Find used oscilloscopes from leading manufacturers at competitive prices.",suggested:"Every instrument calibrated to factory specification and backed by a full OEM warranty — the same standards applied to new equipment, at a fraction of the cost.",rationale:"Shifts from generic price messaging to a specific quality and trust statement that directly addresses the used-equipment skepticism. Equally relevant to engineers (quality assurance) and procurement (cost justification)."},
+    cta:{current:"Shop Oscilloscopes",suggested:"Browse Calibrated Oscilloscopes",rationale:"Adding the qualifier reinforces the quality signal at the point of action and differentiates the CTA from a generic e-commerce experience."},
     faqs:[
-      {q:"Are Keysight used instruments suitable for automotive homologation and compliance testing?",a:"Yes. All instruments sold through the Keysight Used Equipment Store are fully calibrated to factory specifications and include a traceable calibration certificate, meeting the same accuracy standards as new equipment."},
-      {q:"What warranty do I get on used Keysight equipment?",a:"Every instrument includes a minimum 1-year Keysight warranty covering parts, labor, and access to Keysight technical support — the same support organization that supports new equipment."},
-      {q:"How is buying used equipment directly from Keysight different from a third-party broker?",a:"As the original manufacturer, Keysight tests and calibrates every used unit against the same factory specifications used for new equipment. Third-party brokers cannot offer OEM calibration, OEM warranty, or access to Keysight's technical support team."}
+      {q:"How do I know a used oscilloscope will meet the accuracy requirements for my test programme?",a:"Every instrument is fully recalibrated to the original factory specification before shipping and includes a traceable calibration certificate. The same calibration standards used for new equipment apply — accuracy performance is guaranteed."},
+      {q:"What happens if a used oscilloscope fails within the warranty period?",a:"All instruments carry a minimum one-year OEM warranty covering parts, labour, and technical support access. Claims are handled directly by the manufacturer, not a third-party service centre."},
+      {q:"Can I get the same firmware version and option configuration as a new unit?",a:"Yes. Firmware is updated to the current supported release prior to shipping, and option configurations can be matched or upgraded to align with your existing test setup. Compatibility with SCPI, MATLAB, and Python control environments is verified before dispatch."}
     ]
   }
 };
