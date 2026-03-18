@@ -104,6 +104,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 /* ── Notice ── */
 .notice{background:rgba(135,21,24,0.05);border-left:3px solid var(--red-dark);padding:11px 15px;font-size:13px;color:var(--text-mid);line-height:1.55;margin-bottom:20px;display:flex;gap:9px;}
+.url-check-checking{background:rgba(0,0,0,0.03);border-color:var(--mid-gray)!important;color:var(--text-dim);}
+.url-check-ok{background:rgba(34,197,94,0.07);border-color:var(--score-green)!important;color:var(--text-mid);}
+.url-check-warn{background:rgba(245,158,11,0.08);border-color:var(--score-amber)!important;color:var(--text-mid);}
+.url-check-fail{background:rgba(239,68,68,0.07);border-color:var(--score-red)!important;color:var(--text-mid);}
 .notice b{color:var(--red-dark);font-weight:700;font-size:13px;flex-shrink:0;}
 
 /* ── Upload ── */
@@ -323,7 +327,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="toggle-panel active" id="panel-url">
         <div class="notice"><b>!</b><span>Only share a URL if your LLM can access and fetch web content. Otherwise, upload a screenshot of the page using the toggle above and include it when providing the prompt to the LLM.</span></div>
-        <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" />
+        <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" oninput="scheduleUrlCheck()" onblur="runUrlCheck()" />
+        <div id="url-check-status" style="display:none;margin-top:8px;padding:9px 12px;font-size:12px;line-height:1.5;border-left:3px solid;"></div>
         <div class="field-hint">The LLM will fetch and audit the page at this URL. Make sure your LLM supports web browsing.</div>
       </div>
       <div class="toggle-panel" id="panel-screenshot">
@@ -808,6 +813,129 @@ function renderPreviews(type){
   z.addEventListener('drop',function(e){e.preventDefault();uploads[t]=uploads[t].concat(Array.from(e.dataTransfer.files));renderPreviews(t);z.classList.add('has-files');});
 });
 function todayStr(){var d=new Date(),m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear();}
+
+// ── URL reachability + robots.txt LLM crawler check ─────────
+var _urlCheckTimer=null;
+
+// Known LLM crawler bot names to check in robots.txt
+var LLM_BOTS=['GPTBot','ClaudeBot','anthropic-ai','Google-Extended','PerplexityBot','cohere-ai','Applebot-Extended','YouBot'];
+
+function scheduleUrlCheck(){
+  clearTimeout(_urlCheckTimer);
+  var el=document.getElementById('url-check-status');
+  el.style.display='none';
+  _urlCheckTimer=setTimeout(runUrlCheck,900);
+}
+
+function runUrlCheck(){
+  clearTimeout(_urlCheckTimer);
+  var url=(document.getElementById('page-url').value||'').trim();
+  var el=document.getElementById('url-check-status');
+  if(!url||!/^https?:\/\/.+\..+/i.test(url)){el.style.display='none';return;}
+
+  setUrlStatus('checking','Checking URL reachability and robots.txt for LLM crawler restrictions…');
+
+  var origin;
+  try{var u=new URL(url);origin=u.protocol+'//'+u.hostname;}
+  catch(e){setUrlStatus('fail','✕ Invalid URL format.');return;}
+
+  var robotsUrl=origin+'/robots.txt';
+
+  // Fetch robots.txt with cors mode — it's a public text file, usually readable cross-origin
+  var controller=new AbortController();
+  var timeoutId=setTimeout(function(){controller.abort();},7000);
+
+  fetch(robotsUrl,{method:'GET',mode:'cors',signal:controller.signal,cache:'no-store'})
+    .then(function(resp){
+      clearTimeout(timeoutId);
+      if(!resp.ok) throw new Error('robots_fetch_failed');
+      return resp.text();
+    })
+    .then(function(text){
+      var blocked=parseRobotsForLLMBots(text);
+      if(blocked.all){
+        setUrlStatus('fail',
+          '✕ This site disallows all crawlers (Disallow: / for User-agent: *). LLMs will very likely be blocked from fetching this page. Switch to the screenshot or PDF option above.');
+        flashScreenshotTab();
+      } else if(blocked.bots.length>0){
+        setUrlStatus('warn',
+          '⚠ robots.txt blocks the following LLM crawlers: '+blocked.bots.join(', ')+'. '
+          +(blocked.bots.length>=3
+            ? 'Most major LLMs will be blocked. Switch to the screenshot or PDF option above is strongly recommended.'
+            : 'Some LLMs may still access the page depending on which you use. If the LLM reports an access error, switch to screenshot or PDF.'));
+        if(blocked.bots.length>=3) flashScreenshotTab();
+      } else {
+        setUrlStatus('ok',
+          '✓ No LLM crawler restrictions found in robots.txt. The page should be fetchable by most LLMs — though server-level blocks (e.g. 403 by IP or rate limiting) are not detectable from here.');
+      }
+    })
+    .catch(function(err){
+      clearTimeout(timeoutId);
+      if(err.name==='AbortError'){
+        setUrlStatus('warn','⚠ Could not reach '+origin+' — the server timed out. The LLM may encounter the same issue. Consider using the screenshot or PDF option.');
+        flashScreenshotTab();
+      } else if(err.message==='robots_fetch_failed'){
+        // robots.txt doesn't exist or returned non-200 — treat as no restrictions declared
+        setUrlStatus('ok','✓ No robots.txt found at '+origin+' — no declared crawler restrictions. The LLM should be able to fetch this page, though server-level blocks are not detectable from here.');
+      } else {
+        // Network error — site unreachable
+        setUrlStatus('fail','✕ Could not reach '+origin+' ('+err.message+'). The LLM will very likely encounter the same error. Switch to the screenshot or PDF option above.');
+        flashScreenshotTab();
+      }
+    });
+}
+
+function parseRobotsForLLMBots(text){
+  // Returns { all: bool, bots: string[] } of blocked LLM bots
+  // Parses robots.txt into per-agent disallow rules
+  var lines=text.split(/\r?\n/);
+  var currentAgents=[];
+  var rules={}; // agent (lowercase) → [disallow paths]
+
+  lines.forEach(function(line){
+    line=line.replace(/#.*/,'').trim();
+    if(!line){currentAgents=[];return;} // blank line ends a block
+    var uaMatch=line.match(/^user-agent:\s*(.+)$/i);
+    var disMatch=line.match(/^disallow:\s*(.*)$/i);
+    if(uaMatch){
+      var agent=uaMatch[1].trim();
+      currentAgents.push(agent);
+      if(!rules[agent.toLowerCase()])rules[agent.toLowerCase()]=[];
+    } else if(disMatch&&currentAgents.length){
+      var path=disMatch[1].trim();
+      currentAgents.forEach(function(a){
+        if(!rules[a.toLowerCase()])rules[a.toLowerCase()]=[];
+        rules[a.toLowerCase()].push(path);
+      });
+    }
+  });
+
+  // Check wildcard — if / is disallowed for *, entire site is blocked
+  var wildcardRules=rules['*']||[];
+  var allBlocked=wildcardRules.some(function(p){return p==='/'||p===''&&wildcardRules.length===1;});
+  if(allBlocked) return {all:true,bots:[]};
+
+  // Check each known LLM bot by name (case-insensitive)
+  var blocked=LLM_BOTS.filter(function(bot){
+    var r=rules[bot.toLowerCase()]||[];
+    return r.some(function(p){return p==='/'||p==='';});
+  });
+  return {all:false,bots:blocked};
+}
+
+function flashScreenshotTab(){
+  var t=document.getElementById('tab-screenshot');
+  if(!t)return;
+  t.style.outline='2px solid var(--score-amber)';
+  setTimeout(function(){t.style.outline='';},3000);
+}
+
+function setUrlStatus(state,msg){
+  var el=document.getElementById('url-check-status');
+  el.className='url-check-'+state;
+  el.textContent=msg;
+  el.style.display='block';
+}
 
 function buildPrompt(){
   var url=document.getElementById('page-url').value.trim();
@@ -1632,22 +1760,31 @@ async function exportPDF(){
     pdf.setFontSize(8);
     pdf.setTextColor(233,0,41);
     pdf.text(tabLabels[ti].toUpperCase(),pageW-margin,10,{align:'right'});
-    // Date + LLM model right-aligned on second line
+    // Date + LLM model right-aligned on second line.
+    // Render in two passes from right to left so icon placement needs no text measurement:
+    // [date · ] [ICON] [LLM name] all right-anchored.
     pdf.setFont('helvetica','normal');
     pdf.setFontSize(7);
     pdf.setTextColor(151,153,155);
-    var pdfMeta=auditDate+(auditLLM?' · '+auditLLM:'');
-    // Calculate right-edge x for icon placement
-    var metaTextW=pdf.getTextWidth(pdfMeta);
     var metaX=pageW-margin;
-    pdf.text(pdfMeta,metaX,14.5,{align:'right'});
-    // Add LLM icon to the left of the text if available
     if(llmIconDataUrl&&auditLLM){
-      var iconMm=3.5; // icon size in mm
-      var textOnlyW=pdf.getTextWidth(auditLLM);
-      var sepW=pdf.getTextWidth(' · ');
-      var iconX=metaX-textOnlyW-iconMm-0.8;
-      pdf.addImage(llmIconDataUrl,'PNG',iconX,12,iconMm,iconMm);
+      var iconMm=3.5;
+      var iconGap=0.8; // gap between icon and LLM name text
+      var iconDateGap=0.8; // gap between date·sep and icon
+      // 1. LLM name right-aligned to metaX
+      pdf.text(auditLLM,metaX,14.5,{align:'right'});
+      // 2. Measure LLM name width accurately via jsPDF's own unit system after render
+      //    Use getStringUnitWidth which returns in font units, convert: width_mm = unitW * fontSize / scaleFactor
+      var llmUnitW=pdf.getStringUnitWidth(auditLLM);
+      var llmMm=llmUnitW*7/pdf.internal.scaleFactor;
+      // 3. Place icon to the left of LLM name
+      var iconX=metaX-llmMm-iconGap-iconMm;
+      pdf.addImage(llmIconDataUrl,'PNG',iconX,12.0,iconMm,iconMm);
+      // 4. Date + separator right-aligned to left edge of icon
+      var dateSep=auditDate+' · ';
+      pdf.text(dateSep,iconX-iconDateGap,14.5,{align:'right'});
+    } else {
+      pdf.text(auditDate+(auditLLM?' · '+auditLLM:''),metaX,14.5,{align:'right'});
     }
 
     // Thin separator
