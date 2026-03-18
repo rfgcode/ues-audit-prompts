@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Keysight UES Audit Tool</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='32' height='32' fill='%23E90029'/%3E%3Cpath d='M29 16.318C28.8018 16.318 28.3602 16.0668 28.0593 14.8768C27.5731 12.947 27.3232 11.3513 26.4974 11.3513C25.6716 11.3513 25.2707 12.9736 24.7625 14.8833C24.4746 16.0091 24.1608 16.3244 23.6649 16.3244C23.1691 16.3244 22.7242 16.0993 22.0069 13.1533C21.3703 10.5798 20.9609 5.94151 18.8832 5.94151C16.8055 5.94151 16.1792 12.008 15.9132 13.1786C15.5865 14.6133 14.7865 16.318 13.756 16.318C12.7255 16.318 12.1942 15.1279 11.8836 13.8411C11.4097 11.9113 10.8725 9.0549 9.50888 9.0549C8.14525 9.0549 7.69716 11.3968 7.09605 13.9761C6.73771 15.488 6.20634 16.318 5.17587 16.318H3C3.27604 16.4569 3.5128 16.6635 3.68839 16.9186C3.86398 17.1738 3.97275 17.4694 4.00464 17.778C4.34361 19.9329 4.6064 21.282 5.36827 21.282C6.13015 21.282 6.40133 20.1756 6.84037 18.362C7.1632 16.9597 7.692 16.316 8.31893 16.316C9.25965 16.316 9.68256 17.4418 10.201 19.6254C11.2057 23.9353 11.4278 26.0585 13.0619 26.0585C14.6961 26.0585 14.9343 23.9678 16.0126 19.6254C16.48 17.7598 17.3762 16.316 18.4067 16.316C19.4372 16.316 20.1668 17.6865 20.5509 18.7863C21.3573 21.173 21.7351 22.0671 22.6312 22.0671C23.5274 22.0671 24.0394 20.9926 24.82 18.3808C25.3126 16.7728 25.4011 16.316 26.8558 16.316L29 16.318Z' fill='white'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* ── Keysight Brand ──────────────────────────────────────────
@@ -324,9 +324,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="toggle-tabs">
         <button class="toggle-tab active" id="tab-url" onclick="switchTab('url')">Page URL</button>
         <button class="toggle-tab" id="tab-screenshot" onclick="switchTab('screenshot')">Upload Screenshots</button>
+        <button class="toggle-tab" id="tab-source" onclick="switchTab('source')">Paste Source Code</button>
       </div>
       <div class="toggle-panel active" id="panel-url">
-        <div class="notice"><b>!</b><span>Only share a URL if your LLM can access and fetch web content. Otherwise, upload a screenshot of the page using the toggle above and include it when providing the prompt to the LLM.</span></div>
+        <div class="notice"><b>!</b><span>Only share a URL if your LLM can access and fetch web content. Otherwise, upload a screenshot or provide the source code of the page using the toggle above.</span></div>
         <input type="url" id="page-url" placeholder="https://www.keysight.com/used/…" oninput="scheduleUrlCheck()" onblur="runUrlCheck()" />
         <div id="url-check-status" style="display:none;margin-top:8px;padding:9px 12px;font-size:12px;line-height:1.5;border-left:3px solid;"></div>
         <div class="field-hint">The LLM will fetch and audit the page at this URL. Make sure your LLM supports web browsing.</div>
@@ -349,6 +350,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div id="desktop-previews" class="preview-strip"></div>
         <div id="mobile-previews" class="preview-strip"></div>
+      </div>
+      <div class="toggle-panel" id="panel-source">
+        <div class="notice"><b>ℹ</b><span>Use this option when the LLM cannot fetch the URL and screenshots are not practical. In your browser, go to the page, right-click and choose <strong>View Page Source</strong> (or press <strong>⌘U</strong> / <strong>Ctrl+U</strong>), then select all and paste the HTML here.</span></div>
+        <textarea id="page-source" placeholder="Paste the full HTML source of the page here…" style="width:100%;min-height:160px;font-family:monospace;font-size:11px;padding:10px 12px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical;line-height:1.5;box-sizing:border-box;" spellcheck="false" oninput="updateSourceCount()"></textarea>
+        <div id="source-count" style="font-size:11px;color:var(--text-dim);margin-top:5px;display:none;"></div>
+        <div class="field-hint">The source code will be embedded directly in the prompt so the LLM can parse it without web access. Note that source code does not capture visual UX — scoring of layout, hierarchy, and responsiveness will be inferred from structure rather than observed directly.</div>
       </div>
     </div>
     <div class="field-group">
@@ -571,7 +578,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="step-badge">07 / 07</div>
       <div><div class="step-title">Your Audit Prompt</div><div class="step-desc">Copy the prompt and paste it — together with your screenshots or URL — into any LLM.</div></div>
     </div>
-    <div class="notice"><b>ℹ</b><span>If you used the URL option, make sure your LLM supports web browsing. If you uploaded screenshots or PDFs, attach those files when submitting the prompt to your LLM.</span></div>
+    <div class="notice"><b>ℹ</b><span>If you used the URL option, make sure your LLM supports web browsing. If you uploaded screenshots or PDFs, attach those files when submitting the prompt to your LLM. If you pasted source code, it is already embedded in the prompt — no files to attach.</span></div>
     <div id="ss-notice" class="ss-notice" style="display:none"></div>
     <div id="file-checklist" style="display:none;background:var(--white);border:1px solid var(--border);border-left:3px solid var(--dark-gray);padding:14px 16px;margin-bottom:16px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin-bottom:10px;">📎 Files to attach to your LLM</div>
@@ -708,12 +715,28 @@ function initDots(){
   var wrap=document.getElementById('step-dots');wrap.innerHTML='';
   for(var i=1;i<=TOTAL;i++){var d=document.createElement('div');d.className='step-dot'+(i===1?' active':'');(function(n){d.onclick=function(){if(n<cur)goTo(n);};})(i);wrap.appendChild(d);}
 }
+function updateSourceCount(){
+  var val=(document.getElementById('page-source').value||'');
+  var el=document.getElementById('source-count');
+  if(!val){el.style.display='none';return;}
+  var chars=val.length;
+  var approxTokens=Math.round(chars/4);
+  var warn=chars>150000;
+  el.style.display='block';
+  el.style.color=warn?'var(--score-amber)':'var(--text-dim)';
+  el.innerHTML=chars.toLocaleString()+' characters (~'+approxTokens.toLocaleString()+' tokens)'
+    +(warn?' — <strong>This is large and may exceed some LLMs\' context limits. Consider trimming scripts and style blocks.</strong>':'');
+}
+
 function switchTab(mode){
   inputMode=mode;
   document.getElementById('tab-url').className='toggle-tab'+(mode==='url'?' active':'');
   document.getElementById('tab-screenshot').className='toggle-tab'+(mode==='screenshot'?' active':'');
+  document.getElementById('tab-source').className='toggle-tab'+(mode==='source'?' active':'');
   document.getElementById('panel-url').className='toggle-panel'+(mode==='url'?' active':'');
   document.getElementById('panel-screenshot').className='toggle-panel'+(mode==='screenshot'?' active':'');
+  document.getElementById('panel-source').className='toggle-panel'+(mode==='source'?' active':'');
+  if(mode!=='url'){document.getElementById('url-check-status').style.display='none';}
 }
 function toggleCustom(selId,wrapId){
   document.getElementById(wrapId).style.display=document.getElementById(selId).value==='custom'?'block':'none';
@@ -1002,6 +1025,7 @@ function buildPrompt(){
 
   // Page reference block
   var pageRef='',uxNote='';
+  var sourceCode=(document.getElementById('page-source').value||'').trim();
   if(inputMode==='url'&&url){
     pageRef='**Page URL:** '+url+'\nFetch and audit the live page at this URL. Use your web browsing capability to retrieve the full page content.';
   } else if(inputMode==='screenshot'&&(dCount>0||mCount>0)){
@@ -1011,8 +1035,15 @@ function buildPrompt(){
     pageRef='**Page screenshots attached:**\n'+fl.map(function(f){return'- '+f;}).join('\n')+'\nUse these screenshots to assess visual hierarchy, CTA placement, layout, and mobile responsiveness directly.';
     if(dCount>0)uxNote+=' Use the attached desktop screenshot to evaluate layout and visual hierarchy directly.';
     if(mCount>0)uxNote+=' Use the attached mobile screenshot to evaluate responsiveness and mobile UX.';
+  } else if(inputMode==='source'&&sourceCode){
+    pageRef='**Page source code provided below.**\n'
+      +'Parse the HTML to extract all visible content, headings, CTAs, body copy, FAQs, structured data, and meta tags. '
+      +'Note that source code does not convey visual design — infer layout, hierarchy, and responsiveness from HTML structure and class names rather than observing them directly. '
+      +'Score UX based on structural signals (heading hierarchy, CTA placement in DOM, form complexity, trust signal placement) rather than visual rendering.\n\n'
+      +'--- PAGE SOURCE START ---\n'+sourceCode+'\n--- PAGE SOURCE END ---';
+    uxNote+=' Page content has been provided as HTML source. Evaluate UX based on structural signals (heading hierarchy, DOM order of CTAs and trust elements, form complexity) rather than visual rendering — note this limitation explicitly in the UX rationale.';
   } else {
-    pageRef='⚠ NO PAGE PROVIDED: This prompt was generated without a URL or screenshots. Do not attempt the audit. Return only this JSON: {"error": "No page content provided. Please regenerate the prompt with a URL or screenshots attached."}';
+    pageRef='⚠ NO PAGE PROVIDED: This prompt was generated without a URL, screenshots, or source code. Do not attempt the audit. Return only this JSON: {"error": "No page content provided. Please regenerate the prompt with a URL, screenshots, or source code."}';
   }
 
   // Build file checklist for display
@@ -1031,16 +1062,23 @@ function buildPrompt(){
     checklistEl.style.display='none';
   }
 
-  // Screenshot/file notice in output header
+  // Output step notice
   var ssEl=document.getElementById('ss-notice');
   var hasUrl=(inputMode==='url'&&url);
   var hasScreenshots=(inputMode==='screenshot'&&(dCount+mCount>0));
-  if(!hasUrl&&!hasScreenshots){
-    ssEl.innerHTML='<strong style="color:var(--score-red)">⚠ No URL or screenshots provided.</strong> Go back to Step 1 and either enter a URL or upload screenshots before using this prompt.';
+  var hasSource=(inputMode==='source'&&!!sourceCode);
+  if(!hasUrl&&!hasScreenshots&&!hasSource){
+    ssEl.innerHTML='<strong style="color:var(--score-red)">⚠ No page content provided.</strong> Go back to Step 1 and enter a URL, upload screenshots, or paste the page source code before using this prompt.';
     ssEl.style.display='block';
     ssEl.style.background='rgba(239,68,68,0.08)';
     ssEl.style.borderLeft='3px solid var(--score-red)';
     ssEl.style.color='var(--score-red)';
+  } else if(hasSource){
+    ssEl.innerHTML='✓ Page source code embedded in prompt (<strong>'+sourceCode.length.toLocaleString()+'</strong> characters). No files to attach — just paste the prompt into your LLM.';
+    ssEl.style.display='block';
+    ssEl.style.background='rgba(34,197,94,0.06)';
+    ssEl.style.borderLeft='3px solid var(--score-green)';
+    ssEl.style.color='var(--text-mid)';
   } else if(allFiles.length>0){
     ssEl.textContent='✓ '+allFiles.length+' file'+(allFiles.length>1?'s':'')+' referenced above — attach them when submitting to your LLM.';
     ssEl.style.display='block';
@@ -1653,27 +1691,36 @@ async function exportPDF(){
   btn.disabled=true;btn.textContent='Generating…';
 
   var {jsPDF}=window.jspdf;
-  var pageW=210,pageH=297; // A4 mm
-  var margin=12;
+  var pageW=210,pageH=297;
+  var margin=14;
   var contentW=pageW-margin*2;
   var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
-  var tabs=['overview','quality','strategy','usps','risks'];
-  var tabLabels=['Overview','Core Quality','Strategic Fit','USP Coverage','Risks & Opportunities'];
-  if(dbData&&dbData.comparison&&dbData.comparison.length){
-    tabs.push('compare');tabLabels.push('Comparison');
-  }
+  // ── Audit meta ─────────────────────────────────────────────
+  var d=dbData;
+  var s=d.scores||{};
+  function n(v){return(v!==undefined&&v!==null&&!isNaN(Number(v)))?Number(v):0;}
+  var cq=n(s.ux)*0.35+n(s.seo)*0.25+n(s.llmReadability)*0.20+n(s.llmRetrievability)*0.20;
+  var hasSecondary=(s.personaSecondary!==undefined&&s.personaSecondary!==null&&n(s.personaSecondary)>0);
+  var jsf=n(s.journeyStageFit||s.buyingPhaseFit);
+  var sf=n(s.pageGoalFit)*0.20+jsf*0.20+n(s.personaPrimary)*0.25
+    +(hasSecondary?n(s.personaSecondary)*0.10:0)
+    +n(s.uspCoverage)*(hasSecondary?0.15:0.25)
+    +n(s.caringRulerAlignment)*0.10;
+  var fe=cq*0.45+sf*0.55;
 
-  // Get audit meta for header
-  var pageHeadlineEl=document.getElementById('db-page-headline');
-  var pageUrlEl=document.getElementById('db-page-url');
-  var tagDate=document.getElementById('db-tag-date');
-  var auditTitle=pageHeadlineEl?pageHeadlineEl.textContent:'UES Audit';
-  var auditUrl=pageUrlEl?pageUrlEl.textContent:'';
-  var auditDate=tagDate?tagDate.textContent:'';
+  var auditTitle=document.getElementById('db-page-headline').textContent||'UES Audit';
+  var auditUrl=document.getElementById('db-page-url').textContent||'';
+  if(auditUrl==='—')auditUrl='';
+  var auditDate=document.getElementById('db-tag-date').textContent||'';
   var auditLLM=document.getElementById('db-llm-select').value||'';
+  var r=d.rationale||{};
 
-  // Pre-rasterize LLM icon for PDF embedding (SVG → canvas → data URL)
+  // Colour helpers
+  function scoreCol(v){return v>=7.5?[34,197,94]:v>=5?[245,158,11]:[239,68,68];}
+  function hexToRgb(v){var c=scoreCol(v);return c;}
+
+  // ── Pre-rasterize LLM icon ─────────────────────────────────
   var llmIconDataUrl='';
   if(auditLLM&&LLM_ICONS[auditLLM]){
     try{
@@ -1688,7 +1735,7 @@ async function exportPDF(){
       await new Promise(function(res){
         iconImg.onload=function(){
           var ic=document.createElement('canvas');ic.width=iconSize*2;ic.height=iconSize*2;
-          var ictx=ic.getContext('2d');ictx.drawImage(iconImg,0,0,iconSize*2,iconSize*2);
+          ic.getContext('2d').drawImage(iconImg,0,0,iconSize*2,iconSize*2);
           llmIconDataUrl=ic.toDataURL('image/png');
           URL.revokeObjectURL(svgUrl);res();
         };
@@ -1698,146 +1745,422 @@ async function exportPDF(){
     }catch(e){}
   }
 
-  // Save current active tab so we can restore it
-  var activeTabEl=document.querySelector('.db-tab.active');
-  var activeTabId=activeTabEl?activeTabEl.textContent.toLowerCase().replace(/[^a-z]/g,''):'overview';
+  // ── Layout helpers ─────────────────────────────────────────
+  var curY=0;
+  var pageCount=0;
+  var currentTabLabel='';
 
-  for(var ti=0;ti<tabs.length;ti++){
-    var tabId=tabs[ti];
-    var panel=document.getElementById('db-tab-'+tabId);
-    if(!panel)continue;
-
-    // Show this tab fully for capture
-    tabs.forEach(function(t){
-      var p=document.getElementById('db-tab-'+t);
-      if(p)p.style.display=t===tabId?'block':'none';
-    });
-    // Temporarily make panel full-width, no clip, for capture
-    panel.style.display='block';
-    panel.style.width='900px';
-    panel.style.overflow='visible';
-    panel.style.maxHeight='none';
-
-    // Wait for layout
-    await new Promise(function(r){setTimeout(r,120);});
-
-    var canvas=await html2canvas(panel,{
-      scale:1.5,
-      useCORS:true,
-      backgroundColor:'#F2F2F0',
-      logging:false,
-      width:900,
-      windowWidth:960
-    });
-
-    // Reset panel style
-    panel.style.width='';
-    panel.style.overflow='';
-    panel.style.maxHeight='';
-
-    if(ti>0)pdf.addPage();
-
-    // ── Page header ──────────────────────────────
-    // Red accent bar
+  function drawPageHeader(){
     pdf.setFillColor(233,0,41);
     pdf.rect(0,0,pageW,2,'F');
-
-    // Page title area
     pdf.setFillColor(255,255,255);
     pdf.rect(0,2,pageW,16,'F');
-    pdf.setFont('helvetica','bold');
-    pdf.setFontSize(8);
-    pdf.setTextColor(0,0,0);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(0,0,0);
     pdf.text('KEYSIGHT UES AUDIT',margin,10);
-    pdf.setFont('helvetica','normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(151,153,155);
-    // Show headline (page name · page type) then URL
-    var pdfSubtitle=auditTitle+(auditUrl&&auditUrl!=='—'?' — '+auditUrl:'');
-    pdf.text(pdfSubtitle,margin,14.5);
-    // Tab name right-aligned
-    pdf.setFont('helvetica','bold');
-    pdf.setFontSize(8);
-    pdf.setTextColor(233,0,41);
-    pdf.text(tabLabels[ti].toUpperCase(),pageW-margin,10,{align:'right'});
-    // Date + LLM model right-aligned on second line.
-    // Render in two passes from right to left so icon placement needs no text measurement:
-    // [date · ] [ICON] [LLM name] all right-anchored.
-    pdf.setFont('helvetica','normal');
-    pdf.setFontSize(7);
-    pdf.setTextColor(151,153,155);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
+    var subtitle=auditTitle+(auditUrl?' — '+auditUrl:'');
+    pdf.text(subtitle,margin,14.5);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(233,0,41);
+    pdf.text(currentTabLabel.toUpperCase(),pageW-margin,10,{align:'right'});
+    // LLM + date
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
     var metaX=pageW-margin;
     if(llmIconDataUrl&&auditLLM){
-      var iconMm=3.5;
-      var iconGap=0.8; // gap between icon and LLM name text
-      var iconDateGap=0.8; // gap between date·sep and icon
-      // 1. LLM name right-aligned to metaX
       pdf.text(auditLLM,metaX,14.5,{align:'right'});
-      // 2. Measure LLM name width accurately via jsPDF's own unit system after render
-      //    Use getStringUnitWidth which returns in font units, convert: width_mm = unitW * fontSize / scaleFactor
-      var llmUnitW=pdf.getStringUnitWidth(auditLLM);
-      var llmMm=llmUnitW*7/pdf.internal.scaleFactor;
-      // 3. Place icon to the left of LLM name
+      var llmMm=pdf.getStringUnitWidth(auditLLM)*7/pdf.internal.scaleFactor;
+      var iconMm=3.5,iconGap=0.8;
       var iconX=metaX-llmMm-iconGap-iconMm;
       pdf.addImage(llmIconDataUrl,'PNG',iconX,12.0,iconMm,iconMm);
-      // 4. Date + separator right-aligned to left edge of icon
-      var dateSep=auditDate+' · ';
-      pdf.text(dateSep,iconX-iconDateGap,14.5,{align:'right'});
+      pdf.text(auditDate+' · ',iconX-0.8,14.5,{align:'right'});
     } else {
       pdf.text(auditDate+(auditLLM?' · '+auditLLM:''),metaX,14.5,{align:'right'});
     }
-
-    // Thin separator
-    pdf.setDrawColor(217,217,214);
-    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(217,217,214);pdf.setLineWidth(0.2);
     pdf.line(margin,18,pageW-margin,18);
-
-    // ── Tab content (canvas image) ──────────────
-    var imgData=canvas.toDataURL('image/jpeg',0.82);
-    var imgW=contentW;
-    var rawH=(canvas.height/canvas.width)*imgW;
-    var availH=pageH-22-margin; // below header, above bottom margin
-
-    if(rawH<=availH){
-      // Fits on one page
-      pdf.addImage(imgData,'JPEG',margin,20,imgW,rawH);
-    } else {
-      // Tile across multiple pages
-      var scale=imgW/canvas.width; // mm per px
-      var sliceHpx=Math.floor(availH/scale); // px per page slice
-      var sliceHmm=sliceHpx*scale;
-      var pages=Math.ceil(canvas.height/sliceHpx);
-      for(var pg=0;pg<pages;pg++){
-        if(pg>0){
-          pdf.addPage();
-          // Repeat header on continuation pages
-          pdf.setFillColor(233,0,41);pdf.rect(0,0,pageW,2,'F');
-          pdf.setFillColor(255,255,255);pdf.rect(0,2,pageW,16,'F');
-          pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(0,0,0);
-          pdf.text('KEYSIGHT UES AUDIT',margin,10);
-          pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(233,0,41);
-          pdf.text(tabLabels[ti].toUpperCase()+' (cont.)',pageW-margin,10,{align:'right'});
-          pdf.setDrawColor(217,217,214);pdf.setLineWidth(0.2);pdf.line(margin,18,pageW-margin,18);
-        }
-        // Slice canvas
-        var sliceCanvas=document.createElement('canvas');
-        sliceCanvas.width=canvas.width;
-        sliceCanvas.height=Math.min(sliceHpx,canvas.height-pg*sliceHpx);
-        var ctx=sliceCanvas.getContext('2d');
-        ctx.drawImage(canvas,0,-pg*sliceHpx);
-        pdf.addImage(sliceCanvas.toDataURL('image/jpeg',0.82),'JPEG',margin,20,imgW,sliceCanvas.height*scale);
-      }
-    }
-
-    // ── Page number footer ──────────────────────
-    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
-    pdf.text('Page '+(ti+1)+' of '+tabs.length,pageW/2,pageH-4,{align:'center'});
+    curY=22;
   }
 
-  // Restore the originally active tab
-  setDbTab(activeTabId, document.querySelector('.db-tab'));
+  function newPage(label){
+    if(pageCount>0)pdf.addPage();
+    pageCount++;
+    currentTabLabel=label||currentTabLabel;
+    drawPageHeader();
+  }
 
-  // Save
+  function checkY(needed){
+    if(curY+needed>pageH-16){
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
+      pdf.text('Page '+pageCount,pageW/2,pageH-5,{align:'center'});
+      pdf.addPage();
+      pageCount++;
+      drawPageHeader();
+    }
+  }
+
+  function drawFooter(){
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(151,153,155);
+    pdf.text('Page '+pageCount,pageW/2,pageH-5,{align:'center'});
+  }
+
+  // Wrapped text block — returns height used
+  function textBlock(text,x,y,w,size,style,rgb){
+    pdf.setFont('helvetica',style||'normal');
+    pdf.setFontSize(size||9);
+    pdf.setTextColor(rgb?rgb[0]:51,rgb?rgb[1]:51,rgb?rgb[2]:51);
+    var lines=pdf.splitTextToSize(text||'',w);
+    pdf.text(lines,x,y);
+    return lines.length*(size||9)*0.352778*1.35;
+  }
+
+  function sectionLabel(label){
+    checkY(12);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(7);
+    pdf.setTextColor(151,153,155);
+    pdf.text(label.toUpperCase(),margin,curY);
+    curY+=5;
+    pdf.setDrawColor(230,230,228);pdf.setLineWidth(0.2);
+    pdf.line(margin,curY,margin+contentW,curY);
+    curY+=4;
+  }
+
+  function scoreBar(label,score,weight,rationale){
+    checkY(22);
+    var col=scoreCol(score);
+    var barW=contentW;
+    var fillW=(score/10)*barW;
+    // Label + score on one line
+    pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.setTextColor(30,30,30);
+    pdf.text(label,margin,curY);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+    pdf.setTextColor(col[0],col[1],col[2]);
+    pdf.text(score.toFixed(1),margin+barW,curY,{align:'right'});
+    if(weight){
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(180,180,180);
+      pdf.text('weight '+weight,margin+barW,curY);
+    }
+    curY+=3.5;
+    // Bar track
+    pdf.setFillColor(235,235,233);
+    pdf.roundedRect(margin,curY,barW,2.5,0.5,0.5,'F');
+    pdf.setFillColor(col[0],col[1],col[2]);
+    if(fillW>0)pdf.roundedRect(margin,curY,fillW,2.5,0.5,0.5,'F');
+    curY+=5;
+    // Rationale
+    if(rationale){
+      var h=textBlock(rationale,margin,curY,contentW,7.5,'normal',[100,100,100]);
+      curY+=h+4;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 1 — OVERVIEW
+  // ══════════════════════════════════════════════════════════
+  newPage('Overview');
+
+  // Page classification
+  sectionLabel('Page Classification');
+  var classH=textBlock(d.pageClassification||'',margin,curY,contentW,8.5,'normal',[51,51,51]);
+  curY+=classH+6;
+
+  // Score summary — three score boxes in a row
+  sectionLabel('Scores');
+  var boxW=(contentW-6)/3;
+  var boxes=[
+    {label:'Core Quality',score:cq,sub:'UX · SEO · LLM'},
+    {label:'Strategic Fit',score:sf,sub:'Goal · Journey · Persona · USP'},
+    {label:'Overall Effectiveness',score:fe,sub:'CQ × 45% + SF × 55%',highlight:true}
+  ];
+  boxes.forEach(function(b,i){
+    var bx=margin+i*(boxW+3);
+    var col=scoreCol(b.score);
+    var bgAlpha=b.highlight?[245,245,243]:[250,250,248];
+    pdf.setFillColor(bgAlpha[0],bgAlpha[1],bgAlpha[2]);
+    pdf.roundedRect(bx,curY,boxW,22,1,1,'F');
+    if(b.highlight){
+      pdf.setDrawColor(col[0],col[1],col[2]);pdf.setLineWidth(0.5);
+      pdf.roundedRect(bx,curY,boxW,22,1,1,'S');
+    }
+    // Score number
+    pdf.setFont('helvetica','bold');pdf.setFontSize(18);
+    pdf.setTextColor(col[0],col[1],col[2]);
+    pdf.text(b.score.toFixed(1),bx+boxW/2,curY+11,{align:'center'});
+    // Label
+    pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.setTextColor(30,30,30);
+    pdf.text(b.label,bx+boxW/2,curY+16,{align:'center'});
+    // Sub
+    pdf.setFont('helvetica','normal');pdf.setFontSize(6);pdf.setTextColor(160,160,160);
+    pdf.text(b.sub,bx+boxW/2,curY+19.5,{align:'center'});
+  });
+  curY+=26;
+
+  // All scores mini-list
+  var miniScores=[
+    ['UX',n(s.ux)],['SEO',n(s.seo)],['LLM Readability',n(s.llmReadability)],
+    ['LLM Retrievability',n(s.llmRetrievability)],['Page Goal Fit',n(s.pageGoalFit)],
+    ['Journey Stage Fit',jsf],['Persona – Primary',n(s.personaPrimary)],
+    ['USP Coverage',n(s.uspCoverage)],['Caring Ruler',n(s.caringRulerAlignment)]
+  ];
+  if(hasSecondary)miniScores.splice(8,0,['Persona – Secondary',n(s.personaSecondary)]);
+  var colCount=2;var colW=(contentW-4)/colCount;
+  for(var mi=0;mi<miniScores.length;mi++){
+    var ci=mi%colCount;
+    var ri=Math.floor(mi/colCount);
+    if(ci===0){checkY(7);}
+    var mx=margin+ci*(colW+4);
+    var my=curY+ri*7;
+    var mc=scoreCol(miniScores[mi][1]);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(60,60,60);
+    pdf.text(miniScores[mi][0],mx,my);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(mc[0],mc[1],mc[2]);
+    pdf.text(miniScores[mi][1].toFixed(1),mx+colW,my,{align:'right'});
+    // mini bar
+    var mbW=colW-35;var mbX=mx+30;
+    pdf.setFillColor(235,235,233);pdf.roundedRect(mbX,my-2.5,mbW,2,0.4,0.4,'F');
+    pdf.setFillColor(mc[0],mc[1],mc[2]);
+    var mfW=(miniScores[mi][1]/10)*mbW;
+    if(mfW>0)pdf.roundedRect(mbX,my-2.5,mfW,2,0.4,0.4,'F');
+  }
+  curY+=Math.ceil(miniScores.length/colCount)*7+4;
+  drawFooter();
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 2 — CORE QUALITY
+  // ══════════════════════════════════════════════════════════
+  newPage('Core Quality');
+  sectionLabel('Core Quality Score: '+cq.toFixed(2));
+  scoreBar('UX — User Experience',n(s.ux),'0.35',r.ux);
+  scoreBar('SEO',n(s.seo),'0.25',r.seo);
+  scoreBar('LLM Readability',n(s.llmReadability),'0.20',r.llmReadability);
+  scoreBar('LLM Retrievability',n(s.llmRetrievability),'0.20',r.llmRetrievability);
+  drawFooter();
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 3 — STRATEGIC FIT
+  // ══════════════════════════════════════════════════════════
+  newPage('Strategic Fit');
+  sectionLabel('Strategic Fit Score: '+sf.toFixed(2));
+  scoreBar('Page Goal Fit',n(s.pageGoalFit),'0.20',r.pageGoalFit);
+  scoreBar('Journey Stage Fit',jsf,'0.20',r.journeyStageFit||r.buyingPhaseFit||'');
+  scoreBar('Persona Fit – Primary',n(s.personaPrimary),'0.25',r.personaPrimary);
+  if(hasSecondary)scoreBar('Persona Fit – Secondary',n(s.personaSecondary),'0.10',r.personaSecondary||'');
+  scoreBar('USP Coverage',n(s.uspCoverage),hasSecondary?'0.15':'0.25',r.uspCoverage);
+  scoreBar('Caring Ruler Alignment',n(s.caringRulerAlignment),'0.10',r.caringRulerAlignment);
+  drawFooter();
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 4 — USP COVERAGE
+  // ══════════════════════════════════════════════════════════
+  newPage('USP Coverage');
+  sectionLabel('USP Coverage Assessment');
+  var usps=d.uspCoverage||[];
+  var statusColors={explicit:[34,197,94],implied:[245,158,11],missing:[239,68,68]};
+  var statusLabels={explicit:'Explicit',implied:'Implied',missing:'Missing'};
+  var uspColW=(contentW-4)/2;
+  usps.forEach(function(u,ui){
+    var uc=ui%2;var ur=Math.floor(ui/2);
+    if(uc===0)checkY(8);
+    var ux2=margin+uc*(uspColW+4);var uy=curY+ur*8;
+    var st=(u.status||'missing').toLowerCase().trim();
+    var col=statusColors[st]||statusColors.missing;
+    // Dot
+    pdf.setFillColor(col[0],col[1],col[2]);
+    pdf.circle(ux2+2,uy-1.2,1.2,'F');
+    // Name
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(40,40,40);
+    pdf.text(u.name||'',ux2+5.5,uy);
+    // Status badge
+    pdf.setFont('helvetica','bold');pdf.setFontSize(6.5);pdf.setTextColor(col[0],col[1],col[2]);
+    pdf.text((statusLabels[st]||st).toUpperCase(),ux2+uspColW,uy,{align:'right'});
+  });
+  curY+=Math.ceil(usps.length/2)*8+4;
+
+  // Legend
+  checkY(10);
+  pdf.setDrawColor(217,217,214);pdf.setLineWidth(0.2);pdf.line(margin,curY,margin+contentW,curY);
+  curY+=5;
+  ['explicit','implied','missing'].forEach(function(st,si){
+    var col=statusColors[st];var cnt=(usps.filter(function(u){return(u.status||'').toLowerCase().trim()===st;})).length;
+    var lx=margin+si*36;
+    pdf.setFillColor(col[0],col[1],col[2]);pdf.circle(lx+2,curY-1,1.2,'F');
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(90,90,90);
+    pdf.text(statusLabels[st]+': ',lx+5,curY);
+    pdf.setFont('helvetica','bold');pdf.setTextColor(col[0],col[1],col[2]);
+    pdf.text(String(cnt),lx+5+pdf.getStringUnitWidth(statusLabels[st]+': ')*7.5/pdf.internal.scaleFactor,curY);
+  });
+  curY+=8;
+  drawFooter();
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 5 — RISKS & OPPORTUNITIES
+  // ══════════════════════════════════════════════════════════
+  newPage('Risks & Opportunities');
+  var risks=d.risks||[];var opps=d.opportunities||[];
+  var halfW=(contentW-5)/2;
+
+  // Risks column header
+  pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(239,68,68);
+  pdf.text('TOP RISKS',margin,curY);
+  pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.setTextColor(34,197,94);
+  pdf.text('TOP OPPORTUNITIES',margin+halfW+5,curY);
+  curY+=5;
+  pdf.setDrawColor(239,68,68);pdf.setLineWidth(0.3);pdf.line(margin,curY,margin+halfW,curY);
+  pdf.setDrawColor(34,197,94);pdf.line(margin+halfW+5,curY,margin+contentW,curY);
+  curY+=4;
+
+  var maxItems=Math.max(risks.length,opps.length);
+  for(var ri=0;ri<maxItems;ri++){
+    var risk=risks[ri];var opp=opps[ri];
+    var riskH=0;var oppH=0;
+    // Measure heights
+    if(risk){
+      var rl=pdf.splitTextToSize(risk.text||'',halfW-8);
+      var rl2=pdf.splitTextToSize(risk.consequence||'',halfW-8);
+      riskH=5+rl.length*9*0.352778*1.2+rl2.length*7.5*0.352778*1.2+4;
+    }
+    if(opp){
+      var ol=pdf.splitTextToSize(opp.text||'',halfW-8);
+      var ol2=pdf.splitTextToSize(opp.benefit||'',halfW-8);
+      oppH=5+ol.length*9*0.352778*1.2+ol2.length*7.5*0.352778*1.2+4;
+    }
+    var rowH=Math.max(riskH,oppH,14);
+    checkY(rowH);
+
+    if(risk){
+      pdf.setFont('helvetica','bold');pdf.setFontSize(7.5);pdf.setTextColor(239,68,68);
+      pdf.text('#'+risk.rank,margin,curY);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.setTextColor(30,30,30);
+      var rtLines=pdf.splitTextToSize(risk.text||'',halfW-8);
+      pdf.text(rtLines,margin+7,curY);
+      var rty=curY+rtLines.length*8.5*0.352778*1.3;
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(110,110,110);
+      var rcLines=pdf.splitTextToSize(risk.consequence||'',halfW-8);
+      pdf.text(rcLines,margin+7,rty);
+    }
+    if(opp){
+      var ox=margin+halfW+5;
+      pdf.setFont('helvetica','bold');pdf.setFontSize(7.5);pdf.setTextColor(34,197,94);
+      pdf.text('#'+opp.rank,ox,curY);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.setTextColor(30,30,30);
+      var otLines=pdf.splitTextToSize(opp.text||'',halfW-8);
+      pdf.text(otLines,ox+7,curY);
+      var oty=curY+otLines.length*8.5*0.352778*1.3;
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(110,110,110);
+      var ocLines=pdf.splitTextToSize(opp.benefit||'',halfW-8);
+      pdf.text(ocLines,ox+7,oty);
+    }
+    curY+=rowH;
+    // Divider between rows
+    if(ri<maxItems-1){
+      pdf.setDrawColor(235,235,233);pdf.setLineWidth(0.15);
+      pdf.line(margin,curY-1,margin+contentW,curY-1);
+    }
+  }
+  drawFooter();
+
+  // ══════════════════════════════════════════════════════════
+  // PAGE 6 — COMPARISON (conditional)
+  // ══════════════════════════════════════════════════════════
+  if(d.comparison&&d.comparison.length){
+    newPage('Comparison');
+    sectionLabel('Page Comparison — '+d.comparison.length+' Reference Page'+(d.comparison.length>1?'s':''));
+    d.comparison.forEach(function(comp,ci){
+      checkY(20);
+      // Reference header
+      pdf.setFillColor(245,245,243);
+      pdf.roundedRect(margin,curY,contentW,8,1,1,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(20,20,20);
+      pdf.text(comp.referenceName||comp.reference||'Reference '+(ci+1),margin+3,curY+5.5);
+      if(comp.reference&&comp.reference!==(comp.referenceName||'')){
+        pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(150,150,150);
+        var refLabel=comp.reference.length>55?comp.reference.slice(0,52)+'...':comp.reference;
+        pdf.text(refLabel,margin+contentW,curY+5.5,{align:'right'});
+      }
+      curY+=11;
+
+      // Dimension rows — two columns with explicit gap
+      var colGap=5;
+      var colW2=(contentW-colGap)/2;
+      var colA=margin;
+      var colB=margin+colW2+colGap;
+
+      var dims=[{key:'ux',label:'UI / UX'},{key:'content',label:'Content Depth'},{key:'llm',label:'LLM Readability & Retrievability'}];
+      dims.forEach(function(dim){
+        var data=comp[dim.key];if(!data)return;
+
+        // Dim label
+        checkY(8);
+        pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.setTextColor(180,180,180);
+        pdf.text(dim.label.toUpperCase(),margin,curY);
+        curY+=4;
+
+        // Column headers
+        pdf.setFont('helvetica','bold');pdf.setFontSize(6.5);pdf.setTextColor(233,0,41);
+        pdf.text('AUDITED PAGE',colA,curY);
+        pdf.setFont('helvetica','bold');pdf.setFontSize(6.5);pdf.setTextColor(100,100,100);
+        pdf.text('REFERENCE',colB,curY);
+        curY+=3.5;
+
+        // CRITICAL: set body font BEFORE splitTextToSize so wrapping is calculated at render size
+        pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(50,50,50);
+        var linesA=pdf.splitTextToSize(data.auditedPage||'',colW2);
+        var linesB=pdf.splitTextToSize(data.referencePage||'',colW2);
+        var lineH=Math.max(linesA.length,linesB.length)*7.5*0.352778*1.45;
+        checkY(lineH+8);
+
+        pdf.text(linesA,colA,curY);
+        pdf.text(linesB,colB,curY);
+        curY+=lineH+3;
+
+        // Verdict
+        var vt=data.verdict||'';
+        var vtLower=vt.toLowerCase();
+        var vtCol=vtLower.indexOf('audited')!==-1?[34,197,94]:vtLower.indexOf('reference')!==-1?[245,158,11]:[120,120,120];
+        pdf.setFont('helvetica','bold');pdf.setFontSize(7.5);pdf.setTextColor(vtCol[0],vtCol[1],vtCol[2]);
+        pdf.text('> '+vt,margin,curY);
+        curY+=7;
+      });
+
+      // Strengths & Weaknesses
+      if((comp.strengths&&comp.strengths.length)||(comp.weaknesses&&comp.weaknesses.length)){
+        checkY(12);
+        var swGap=5;
+        var swHalf=(contentW-swGap)/2;
+        var swColA=margin;
+        var swColB=margin+swHalf+swGap;
+
+        pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.setTextColor(34,197,94);
+        pdf.text('STRENGTHS OF REFERENCE',swColA,curY);
+        pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.setTextColor(239,68,68);
+        pdf.text('WEAKNESSES OF REFERENCE',swColB,curY);
+        curY+=5;
+
+        var maxSW=Math.max((comp.strengths||[]).length,(comp.weaknesses||[]).length);
+        for(var si=0;si<maxSW;si++){
+          var str=(comp.strengths||[])[si]||'';
+          var wk=(comp.weaknesses||[])[si]||'';
+          // Set font BEFORE splitting so wrap width matches render size
+          pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(50,50,50);
+          var slA=str?pdf.splitTextToSize('+ '+str,swHalf):[];
+          var slB=wk?pdf.splitTextToSize('- '+wk,swHalf):[];
+          var swH=Math.max(slA.length,slB.length,1)*7.5*0.352778*1.45+4;
+          checkY(swH);
+          if(slA.length)pdf.text(slA,swColA,curY);
+          if(slB.length)pdf.text(slB,swColB,curY);
+          curY+=swH;
+        }
+      }
+      curY+=6;
+      // Separator between multiple comparisons
+      if(ci<d.comparison.length-1){
+        pdf.setDrawColor(217,217,214);pdf.setLineWidth(0.3);
+        pdf.line(margin,curY,margin+contentW,curY);
+        curY+=6;
+      }
+    });
+    drawFooter();
+  }
+
+  // ── Save ───────────────────────────────────────────────────
   var fileAuditName=(auditTitle||'UES-Audit').replace(/[^a-z0-9\s]/gi,' ').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,50);
   var fileLLM=auditLLM?auditLLM.replace(/[^a-z0-9]/gi,'-').replace(/-+/g,'-'):'';
   var fileDate=auditDate||'';
