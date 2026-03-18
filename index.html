@@ -1340,6 +1340,11 @@ function loadDashboard(){
   // Fix: LLMs sometimes nest pageClassification inside meta, producing a stray }
   // Pattern: "pageClassification": "..."\n},\n"scores" → remove the stray }
   raw=raw.replace(/(\"pageClassification\"\s*:\s*\"[^\"]*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
+  // Fix: LLMs sometimes omit the closing } on the last object in an array.
+  // Pattern: a string value (property value) followed directly by whitespace then ]
+  // without an intervening } — indicating the last array item was not closed.
+  // We match: ": "some value"\n  ]  →  ": "some value"\n  }\n  ]
+  raw=raw.replace(/(":\s*"[^"]*")\s*\n(\s*\])/g,'$1\n  }\n$2');
   // Step 1: try to parse. If it fails, attempt smart extraction — find the largest
   // valid JSON object in the text (handles prose wrappers from non-compliant LLMs)
   var parsed=false;
