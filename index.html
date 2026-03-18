@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 /* ── Mode toggle ── */
 .mode-bar{background:var(--white);border-bottom:1px solid var(--light-gray);display:flex;justify-content:center;padding:0;}
 .mode-toggle{display:inline-flex;border:1px solid var(--border);margin:12px 0;}
-.mode-btn{font-family:var(--font);font-size:12px;font-weight:600;padding:9px 28px;border:none;background:var(--white);color:var(--text-dim);cursor:pointer;transition:all 0.15s;letter-spacing:0.02em;border-right:1px solid var(--border);}
+.mode-btn{font-family:var(--font);font-size:12px;font-weight:600;padding:9px 28px;border:none;background:var(--white);color:var(--text-dim);cursor:pointer;transition:all 0.15s;letter-spacing:0.02em;border-right:1px solid var(--border);display:inline-flex;align-items:center;gap:6px;}
 .mode-btn:last-child{border-right:none;}
 .mode-btn.active{background:var(--red);color:var(--white);}
 .mode-btn:not(.active):hover{background:var(--light-gray);color:var(--text-mid);}
@@ -128,7 +128,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 /* ── Nav ── */
 .nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--light-gray);}
-.btn{font-family:var(--font);font-size:13px;font-weight:600;padding:10px 24px;border:none;cursor:pointer;transition:all 0.13s;letter-spacing:0.01em;}
+.btn{font-family:var(--font);font-size:13px;font-weight:600;padding:10px 24px;border:none;cursor:pointer;transition:all 0.13s;letter-spacing:0.01em;display:inline-flex;align-items:center;gap:7px;}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-mid);}
 .btn-ghost:hover{border-color:var(--dark-gray);color:var(--black);}
 .btn-red{background:var(--red);color:var(--white);}
@@ -249,21 +249,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .ro-text{font-size:12px;font-weight:600;color:var(--black);margin-bottom:3px;}
 .ro-sub{font-size:11px;color:var(--text-dim);line-height:1.5;}
 
-/* Rewrites */
-.rewrite-card{background:var(--white);border:1px solid var(--border);padding:16px;margin-bottom:10px;}
-.rewrite-label{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
-.rewrite-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-.rewrite-side{padding:11px;background:var(--bg);}
-.rewrite-current{border-left:3px solid var(--score-red);}
-.rewrite-suggested{border-left:3px solid var(--score-green);}
-.rewrite-side-label{font-size:9px;font-weight:700;letter-spacing:0.08em;margin-bottom:5px;}
-.rewrite-text{font-size:12px;color:var(--text-mid);line-height:1.5;}
-.rewrite-text.strong{color:var(--black);font-weight:500;}
-.rewrite-rationale{font-size:11px;color:var(--text-dim);line-height:1.6;}
-.faq-item{padding-bottom:13px;margin-bottom:13px;border-bottom:1px solid var(--light-gray);}
-.faq-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
-.faq-q{font-size:12px;font-weight:600;color:var(--black);margin-bottom:4px;}
-.faq-a{font-size:11px;color:var(--text-dim);line-height:1.6;}
 </style>
 </head>
 <body>
@@ -292,17 +277,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <!-- Mode toggle -->
 <div class="mode-bar">
   <div class="mode-toggle">
-    <button class="mode-btn active" id="btn-builder" onclick="setMode('builder')"><svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_7204_86476)">
-<path d="M10 1.875C10.3457 1.875 10.625 2.1543 10.625 2.5V7.5C10.625 7.8457 10.3457 8.125 10 8.125H1.25C0.904297 8.125 0.625 7.8457 0.625 7.5V2.5C0.625 2.1543 0.904297 1.875 1.25 1.875H10ZM1.25 1.25C0.560547 1.25 0 1.81055 0 2.5V7.5C0 8.18945 0.560547 8.75 1.25 8.75H10C10.6895 8.75 11.25 8.18945 11.25 7.5V2.5C11.25 1.81055 10.6895 1.25 10 1.25H1.25ZM1.875 4.375V6.5625C1.875 6.73438 2.01562 6.875 2.1875 6.875C2.35938 6.875 2.5 6.73438 2.5 6.5625V5.625H3.75V6.5625C3.75 6.73438 3.89062 6.875 4.0625 6.875C4.23438 6.875 4.375 6.73438 4.375 6.5625V4.375C4.375 3.68555 3.81445 3.125 3.125 3.125C2.43555 3.125 1.875 3.68555 1.875 4.375ZM3.75 5H2.5V4.375C2.5 4.0293 2.7793 3.75 3.125 3.75C3.4707 3.75 3.75 4.0293 3.75 4.375V5ZM5.3125 3.4375V6.5625C5.3125 6.73438 5.45312 6.875 5.625 6.875H6.875C7.47852 6.875 7.96875 6.38477 7.96875 5.78125C7.96875 5.43359 7.80664 5.125 7.55469 4.92383C7.71484 4.73242 7.8125 4.48633 7.8125 4.21875C7.8125 3.61523 7.32227 3.125 6.71875 3.125H5.625C5.45312 3.125 5.3125 3.26562 5.3125 3.4375ZM7.1875 4.21875C7.1875 4.47852 6.97852 4.6875 6.71875 4.6875H5.9375V3.75H6.71875C6.97852 3.75 7.1875 3.95898 7.1875 4.21875ZM5.9375 6.25V5.3125H6.875C7.13477 5.3125 7.34375 5.52148 7.34375 5.78125C7.34375 6.04102 7.13477 6.25 6.875 6.25H5.9375Z"/>
-</g>
-</svg>&nbsp; Audit Prompt Builder</button>
-    <button class="mode-btn" id="btn-dashboard" onclick="setMode('dashboard')"><svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_7204_86478)">
-<path d="M0.9375 1.25C0.765625 1.25 0.625 1.39062 0.625 1.5625V3.4375C0.625 3.60938 0.765625 3.75 0.9375 3.75H2.8125C2.98438 3.75 3.125 3.60938 3.125 3.4375V1.5625C3.125 1.39062 2.98438 1.25 2.8125 1.25H0.9375ZM0 1.5625C0 1.04492 0.419922 0.625 0.9375 0.625H2.8125C3.33008 0.625 3.75 1.04492 3.75 1.5625V3.4375C3.75 3.95508 3.33008 4.375 2.8125 4.375H0.9375C0.419922 4.375 0 3.95508 0 3.4375V1.5625ZM0.9375 6.25C0.765625 6.25 0.625 6.39062 0.625 6.5625V8.4375C0.625 8.60938 0.765625 8.75 0.9375 8.75H2.8125C2.98438 8.75 3.125 8.60938 3.125 8.4375V6.5625C3.125 6.39062 2.98438 6.25 2.8125 6.25H0.9375ZM0 6.5625C0 6.04492 0.419922 5.625 0.9375 5.625H2.8125C3.33008 5.625 3.75 6.04492 3.75 6.5625V8.4375C3.75 8.95508 3.33008 9.375 2.8125 9.375H0.9375C0.419922 9.375 0 8.95508 0 8.4375V6.5625ZM7.8125 1.25H5.9375C5.76562 1.25 5.625 1.39062 5.625 1.5625V3.4375C5.625 3.60938 5.76562 3.75 5.9375 3.75H7.8125C7.98438 3.75 8.125 3.60938 8.125 3.4375V1.5625C8.125 1.39062 7.98438 1.25 7.8125 1.25ZM5.9375 0.625H7.8125C8.33008 0.625 8.75 1.04492 8.75 1.5625V3.4375C8.75 3.95508 8.33008 4.375 7.8125 4.375H5.9375C5.41992 4.375 5 3.95508 5 3.4375V1.5625C5 1.04492 5.41992 0.625 5.9375 0.625ZM5.9375 6.25C5.76562 6.25 5.625 6.39062 5.625 6.5625V8.4375C5.625 8.60938 5.76562 8.75 5.9375 8.75H7.8125C7.98438 8.75 8.125 8.60938 8.125 8.4375V6.5625C8.125 6.39062 7.98438 6.25 7.8125 6.25H5.9375ZM5 6.5625C5 6.04492 5.41992 5.625 5.9375 5.625H7.8125C8.33008 5.625 8.75 6.04492 8.75 6.5625V8.4375C8.75 8.95508 8.33008 9.375 7.8125 9.375H5.9375C5.41992 9.375 5 8.95508 5 8.4375V6.5625Z"/>
-</g>
-</svg>
-&nbsp; Audit Dashboard</button>
+    <button class="mode-btn active" id="btn-builder" onclick="setMode('builder')"><svg width="18" height="16" viewBox="0 0 18 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16 3.5C16.275 3.5 16.5 3.725 16.5 4V12C16.5 12.275 16.275 12.5 16 12.5H2C1.725 12.5 1.5 12.275 1.5 12V4C1.5 3.725 1.725 3.5 2 3.5H16ZM2 2C0.896875 2 0 2.89688 0 4V12C0 13.1031 0.896875 14 2 14H16C17.1031 14 18 13.1031 18 12V4C18 2.89688 17.1031 2 16 2H2ZM3 7V10.25C3 10.6656 3.33437 11 3.75 11C4.16563 11 4.5 10.6656 4.5 10.25V9.5H5.5V10.25C5.5 10.6656 5.83437 11 6.25 11C6.66563 11 7 10.6656 7 10.25V7C7 5.89688 6.10312 5 5 5C3.89688 5 3 5.89688 3 7ZM5.5 8H4.5V7C4.5 6.725 4.725 6.5 5 6.5C5.275 6.5 5.5 6.725 5.5 7V8ZM8.5 5.75V10.25C8.5 10.6656 8.83437 11 9.25 11H10.875C11.9094 11 12.75 10.1594 12.75 9.125C12.75 8.625 12.5531 8.17187 12.2344 7.83437C12.4031 7.55312 12.5 7.225 12.5 6.875C12.5 5.84063 11.6594 5 10.625 5H9.25C8.83437 5 8.5 5.33437 8.5 5.75ZM11 6.875C11 7.08125 10.8312 7.25 10.625 7.25H10V6.5H10.625C10.8312 6.5 11 6.66875 11 6.875ZM10 9.5V8.75H10.875C11.0812 8.75 11.25 8.91875 11.25 9.125C11.25 9.33125 11.0812 9.5 10.875 9.5H10Z"/> </svg> Audit Prompt Builder</button>
+    <button class="mode-btn" id="btn-dashboard" onclick="setMode('dashboard')"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 1.75C1.5 1.33437 1.16563 1 0.75 1C0.334375 1 0 1.33437 0 1.75V12.5C0 13.8813 1.11875 15 2.5 15H15.25C15.6656 15 16 14.6656 16 14.25C16 13.8344 15.6656 13.5 15.25 13.5H2.5C1.94687 13.5 1.5 13.0531 1.5 12.5V1.75ZM14.7812 5.28125C15.075 4.9875 15.075 4.5125 14.7812 4.22188C14.4875 3.93125 14.0125 3.92813 13.7219 4.22188L10.0031 7.94063L7.53438 5.47188C7.24063 5.17813 6.76562 5.17813 6.475 5.47188L3.21875 8.71875C2.925 9.0125 2.925 9.4875 3.21875 9.77812C3.5125 10.0687 3.9875 10.0719 4.27812 9.77812L6.99687 7.05937L9.46562 9.52812C9.75937 9.82187 10.2344 9.82187 10.525 9.52812L14.7812 5.28125Z"/></svg> Audit Dashboard</button>
   </div>
 </div>
 </div><!-- /sticky-chrome -->
@@ -333,6 +309,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="step-header">
       <div class="step-badge">01 / 07</div>
       <div><div class="step-title">Page Identification</div><div class="step-desc">Provide either the page URL or upload screenshots. At least one is required.</div></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Audit Name <span class="req">*</span></label>
+      <input type="text" id="audit-name" placeholder="e.g. Campaign Landing Page" />
+      <div class="field-hint">Give this audit a clear name for documentation and future reference in the results.</div>
     </div>
     <div class="field-group">
       <label class="field-label">How will you provide the page? <span class="req">*</span></label>
@@ -388,10 +369,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <label class="field-label">Primary Page Goal <span class="req">*</span></label>
       <select id="page-goal-select" onchange="toggleCustom('page-goal-select','custom-goal-wrap')">
         <option value="">— Select a goal —</option>
-        <option value="Drive organic traffic and capture inbound leads">Drive organic traffic and capture inbound leads</option>
-        <option value="Educate and build awareness">Educate and build awareness</option>
         <option value="Generate quote requests or direct sales">Generate quote requests or direct sales</option>
+        <option value="Drive organic traffic and capture inbound leads">Drive organic traffic and capture inbound leads</option>
         <option value="Support procurement decision-making">Support procurement decision-making</option>
+        <option value="Educate and build awareness">Educate and build awareness</option>
         <option value="custom">Custom (specify below)</option>
       </select>
     </div>
@@ -451,8 +432,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="field-group">
       <label class="field-label">Target Region <span class="opt-label">(optional)</span></label>
       <select id="target-region">
-        <option value="">— Select region (or leave blank for global) —</option>
-        <option value="Worldwide">Worldwide</option>
+        <option value="Worldwide" selected>Worldwide</option>
         <option value="United States">United States</option>
         <option value="Europe">Europe</option>
         <option value="China">China</option>
@@ -595,7 +575,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="output-box" id="output-text" onclick="selectOutput()" title="Click to select all"></div>
     <div class="copy-row">
-      <button class="btn btn-dark" onclick="copyPrompt()">⎘ Copy Prompt</button>
+      <button class="btn btn-dark" onclick="copyPrompt()"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 14.5H2C1.725 14.5 1.5 14.275 1.5 14V7C1.5 6.725 1.725 6.5 2 6.5H3.5V5H2C0.896875 5 0 5.89688 0 7V14C0 15.1031 0.896875 16 2 16H9C10.1031 16 11 15.1031 11 14V12.5H9.5V14C9.5 14.275 9.275 14.5 9 14.5ZM7 9.5C6.725 9.5 6.5 9.275 6.5 9V2C6.5 1.725 6.725 1.5 7 1.5H14C14.275 1.5 14.5 1.725 14.5 2V9C14.5 9.275 14.275 9.5 14 9.5H7ZM5 9C5 10.1031 5.89688 11 7 11H14C15.1031 11 16 10.1031 16 9V2C16 0.896875 15.1031 0 14 0H7C5.89688 0 5 0.896875 5 2V9Z"/></svg> Copy Prompt</button>
       <span class="copy-feedback" id="copy-feedback"></span>
     </div>
     <div class="nav-row" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--light-gray);">
@@ -661,7 +641,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <span id="db-tag-traffic" class="db-tag">—</span>
           <span id="db-tag-date" class="db-tag">—</span>
           <button class="db-export-btn" id="db-export-btn" onclick="exportPDF()">⬇ Export PDF</button>
-          <button class="db-reset-btn" onclick="resetDashboard()">← New Audit</button>
+          <button class="db-reset-btn" onclick="resetDashboard()">New Audit</button>
         </div>
       </div>
     </div>
@@ -672,7 +652,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="db-tab" onclick="setDbTab('strategy',this)">Strategic Fit</button>
         <button class="db-tab" onclick="setDbTab('usps',this)">USP Coverage</button>
         <button class="db-tab" onclick="setDbTab('risks',this)">Risks &amp; Opps</button>
-        <button class="db-tab" onclick="setDbTab('rewrites',this)">Rewrites</button>
         <button class="db-tab" id="db-tab-btn-compare" onclick="setDbTab('compare',this)" style="display:none">Comparison</button>
       </div>
     </div>
@@ -682,7 +661,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="db-tab-strategy" style="display:none"></div>
       <div id="db-tab-usps"     style="display:none"></div>
       <div id="db-tab-risks"    style="display:none"></div>
-      <div id="db-tab-rewrites" style="display:none"></div>
       <div id="db-tab-compare"  style="display:none"></div>
     </div>
   </div>
@@ -833,6 +811,7 @@ function todayStr(){var d=new Date(),m=['Jan','Feb','Mar','Apr','May','Jun','Jul
 
 function buildPrompt(){
   var url=document.getElementById('page-url').value.trim();
+  var auditNameVal=(document.getElementById('audit-name').value||'').trim();
   var dCount=uploads.desktop.length,mCount=uploads.mobile.length;
   var ptRaw=document.getElementById('page-type').value;
   var pageType=ptRaw==='custom'?(document.getElementById('page-type-custom').value.trim()||'[custom page type]'):(ptRaw||'[page type]');
@@ -983,7 +962,33 @@ adSnippet+
 '| 4–6   | Basic requirements partially met; significant gaps present |\n'+
 '| 7–8   | Professionally executed; minor gaps only |\n'+
 '| 9–10  | Best-in-class; clearly exceeds industry standard – justify explicitly |\n\n'+
-'**Rule:** Do not assume positive intent for content not explicitly present. Only credit what is visible and verifiable. A score above 9 requires an explicit written justification.\n\n'+
+'**Rule:** Do not assume positive intent for content not explicitly present. Only credit what is visible and verifiable. A score above 8 requires explicit justification based on visible page elements.\n\n'+
+'---\n\n'+
+'### AUDIT CONDUCT RULES\n\n'+
+'- A score above 8 requires explicit justification based on visible page elements.\n'+
+'- Never assume content exists if it is not explicitly present on the page.\n'+
+'- Evaluate LLM Retrievability across both dimensions: product retrieval and knowledge retrieval.\n'+
+(hasSecondary?'- For the secondary audience ('+secAud+'), flag any missing compliance, budget justification, or vendor-reliability content explicitly.\n':'')+
+'\n---\n\n'+
+'### AUDIT HEURISTICS — DO\'s & DON\'Ts\n\n'+
+'These heuristics define how to interpret and score content. Apply them strictly across all dimensions.\n\n'+
+'**DO:**\n'+
+'- Reward explicit, concrete claims over vague statements (e.g. "Up to 5 years warranty" > "high quality equipment")\n'+
+'- Reward content that directly resolves buyer skepticism about used equipment (quality, calibration, warranty, support, risk)\n'+
+'- Reward evidence-based communication (numbers, processes, certifications, guarantees)\n'+
+'- Reward clear mapping between problem → solution → proof\n'+
+'- Reward content that would survive as a standalone answer in an AI-generated response (clear, factual, citable)\n'+
+'- Reward explicit application and measurement context — not just product categories ("Used oscilloscopes for automotive CAN bus validation" retrieves better than "Used oscilloscopes"). Named use cases, measurement tasks, and application-to-product mapping are strong LLM retrieval signals.\n'+
+'- Reward explicit positioning of Keysight as OEM seller, not a broker or reseller\n'+
+'- Reward persona-specific relevance\n\n'+
+'**DON\'T:**\n'+
+'- Do not reward vague marketing language (e.g. "trusted partner", "industry leading", "high quality") unless substantiated\n'+
+'- Do not assume a USP is present if it is not explicitly stated\n'+
+'- Do not reward content that lists products without addressing buyer risk\n'+
+'- Do not give credit for implied trust signals — they must be visible and specific\n'+
+'- Do not reward generic content that could apply to any competitor\n'+
+'- Do not overvalue structure or design if core objections remain unresolved\n'+
+'- Do not reward emotional or generic messaging for technical audiences without supporting evidence\n\n'+
 '---\n\n'+
 '### DIMENSION DEFINITIONS\n\n'+
 '#### TECHNICAL QUALITY DIMENSIONS\n\n'+
@@ -998,9 +1003,11 @@ adSnippet+
 '*Definition: Will this specific page and its offerings and content be top rated by LLMs for considerations or citations when a user asks about used test equipment, a specific instrument model, or a vendor comparison?*\n\n'+
 'Assess two distinct retrieval scenarios:\n\n'+
 '**4a. Product Retrieval** – Does the page contain the explicit signals an LLM needs to recommend a specific product or category? Assess: model numbers and product names as named entities, category terms (e.g. "used oscilloscope", "refurbished signal analyzer"), availability signals, pricing transparency, and vendor identification (Keysight as OEM-seller, not third-party broker).\n\n'+
-'**4b. Knowledge Retrieval** – Will this page be cited when a user asks a trust or category question (e.g. "Is it safe to buy used test equipment from Keysight?")? Assess: citable facts and statistics, FAQ content mirroring real buyer queries, E-E-A-T signals, and whether the content would survive as a standalone answer in an AI-generated response.\n\n'+
+'**4b. Knowledge Retrieval** – Will this page be cited when a user asks a trust or application question? Assess across two query types:\n\n'+
+'- **Trust & vendor queries** (e.g. "Is it safe to buy used test equipment from Keysight?", "Keysight used vs. third-party broker") → citable facts, warranty/calibration specifics, explicit OEM positioning, E-E-A-T signals\n'+
+'- **Application & measurement queries** (e.g. "What equipment for automotive EMC testing?", "Best used oscilloscope for CAN bus validation") → named use cases, measurement parameters, application-to-product mapping\n\n'+
 'Score LLM Retrievability as a weighted average of both sub-dimensions, noting which is stronger and which is weaker.\n\n'+
-'> Note: LLM Readability and LLM Retrievability are related but distinct. A page can be easy to read but not citable (marketing fluff). A page can be retrievable but confusing (dense spec sheets). Optimize both independently.\n\n'+
+'> Note: LLM Readability and LLM Retrievability are related but distinct. A page can be easy to read but not citable (e.g. marketing fluff). A page can be retrievable but confusing (e.g. dense spec sheets). Optimize both independently.\n\n'+
 '---\n\n'+
 '#### STRATEGIC FIT DIMENSIONS\n\n'+
 '**5. Page Goal Fit**\n'+
@@ -1046,7 +1053,7 @@ uspRows+'\n\n'+
 '{\n'+
 '  "meta": {\n'+
 '    "url": "'+(url||'[full page URL, or empty string if not available — do NOT invent or guess a URL]')+'",\n'+
-'    "pageName": "[short descriptive page name, e.g. Education & Research Hub — always provide this, especially when no URL is available]",\n'+
+'    "auditName": "'+(auditNameVal||'[audit name]')+'",\n'+
 '    "pageType": "'+pageType+'",\n'+
 '    "audience": "'+primaryAud+(hasSecondary?' / '+secAud:'')+'",\n'+
 '    "trafficSource": "'+traffic+'",\n'+
@@ -1081,18 +1088,7 @@ usps.map(function(u){return'    { "name": "'+u.replace(/\s*—.*/,'').trim()+'",
 '    { "rank": 3, "text": "...", "benefit": "..." },\n'+
 '    { "rank": 4, "text": "...", "benefit": "..." },\n'+
 '    { "rank": 5, "text": "...", "benefit": "..." }\n'+
-'  ],\n'+
-'  "rewrites": {\n'+
-'    "hero":       { "current": "...", "suggested": "...", "rationale": "reference Caring Ruler tone where relevant" },\n'+
-'    "subheading": { "current": "...", "suggested": "...", "rationale": "..." },\n'+
-'    "cta":        { "current": "...", "suggested": "...", "rationale": "..." },\n'+
-'    "faqs": [\n'+
-'      { "q": "mirror a real buyer query", "a": "specific, evidence-based, Caring Ruler tone" },\n'+
-'      { "q": "...", "a": "..." },\n'+
-'      { "q": "...", "a": "..." }\n'+
-'    ]\n'+
-'  }'+(hasComparison?',\n'+
-'  "comparison": [\n'+
+'  ],\n'+(hasComparison?'  "comparison": [\n'+
 '    {\n'+
 '      "reference": "[URL or filename of the reference page]",\n'+
 '      "referenceName": "[short descriptive name for this reference page]",\n'+
@@ -1105,16 +1101,6 @@ usps.map(function(u){return'    { "name": "'+u.replace(/\s*—.*/,'').trim()+'",
 '  ]':'')+'\n'+
 '}\n\n'+
 '---\n\n'+
-'### AUDIT CONDUCT RULES\n\n'+
-'1. Be strict. Evidence-based. Do not inflate.\n'+
-'2. A score above 9 requires explicit written justification in the rationale field.\n'+
-'3. Never assume content exists if it is not visible on the page.\n'+
-'4. Do not treat vague marketing language as USP coverage or Caring Ruler alignment.\n'+
-'5. Distinguish clearly between what is **strong**, what is **weak**, and what is **missing**.\n'+
-'6. Optimize your judgment for **B2B used-equipment buying** – not consumer e-commerce.\n'+
-'7. Always evaluate LLM Retrievability across both sub-dimensions: product retrieval and knowledge retrieval.\n'+
-'8. Always check for Caring Ruler misalignment: purely transactional, generic, or unsubstantiated content is a red flag regardless of other scores.\n'+
-(hasSecondary?'9. For the secondary audience ('+secAud+'), flag any missing compliance, budget justification, or vendor-reliability content explicitly.\n':'')+
 compBlock+
 '\n---\n\n'+
 '*Prompt Version: 1.0 | Keysight UES | Date created: '+today+'*\n\n'+
@@ -1223,7 +1209,7 @@ function loadDashboard(){
   document.getElementById('db-error').style.display='none';
   try{renderDashboard();}
   catch(e){
-    showDbError('⚠ Dashboard render error: '+e.message+'. Check all required fields are present in the JSON (scores, rationale, uspCoverage, risks, opportunities, rewrites).');
+    showDbError('⚠ Dashboard render error: '+e.message+'. Check all required fields are present in the JSON (scores, rationale, uspCoverage, risks, opportunities).');
   }
 }
 function showDbError(msg){
@@ -1245,6 +1231,21 @@ function resetDashboard(){
 
 function sc(s){return s>=7.5?'var(--score-green)':s>=5?'var(--score-amber)':'var(--score-red)';}
 function sl(s){return s>=7.5?'Strong':s>=5?'Partial':'Weak';}
+
+// LLM brand icons (16×16 inline SVG, fills currentColor)
+var LLM_ICONS={
+  'Claude':'<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M3.13925 10.6036L6.28656 8.84445L6.33925 8.69111L6.28656 8.60638H6.13269L5.60606 8.57413L3.80763 8.5257L2.24813 8.46114L0.737188 8.38045L0.356438 8.2997L0 7.83166L0.0364375 7.59763L0.356438 7.38384L0.814188 7.42419L1.82681 7.49273L3.34581 7.59763L4.44763 7.66219L6.08 7.83166H6.33925L6.37569 7.72675L6.28656 7.66219L6.21775 7.59763L4.64606 6.53647L2.94481 5.41479L2.05369 4.76918L1.57162 4.44233L1.32862 4.13572L1.22331 3.46596L1.66081 2.98577L2.24813 3.02618L2.398 3.06652L2.99344 3.52243L4.26531 4.50297L5.92606 5.7214L6.16913 5.92311L6.26631 5.85451L6.2785 5.80613L6.16913 5.62453L5.26581 3.99851L4.30175 2.34422L3.87238 1.65827L3.759 1.24675C3.7185 1.07723 3.69012 0.936031 3.69012 0.762521L4.18837 0.088716L4.46375 0L5.12813 0.0887782L5.40763 0.330833L5.82075 1.27097L6.48912 2.75181L7.52606 4.7652L7.82987 5.36237L7.99188 5.91514L8.05269 6.08461H8.158V5.98774L8.243 4.85398L8.401 3.46191L8.55494 1.67041L8.60763 1.16613L8.85875 0.560872L9.35694 0.234023L9.74581 0.419611L10.0658 0.87558L10.0212 1.17005L9.83088 2.40075L9.45825 4.32946L9.21519 5.62061H9.35694L9.519 5.45918L10.1752 4.59169L11.2769 3.2198L11.7631 2.67511L12.3301 2.0739L12.6947 1.78746H13.3833L13.8896 2.53796L13.6628 3.31262L12.9539 4.20837L12.3666 4.96691L11.5241 6.09668L10.9974 7.00053L11.0461 7.07312L11.1717 7.06104L13.0754 6.65756L14.1043 6.47191L15.3316 6.2621L15.8866 6.52034L15.9473 6.78263L15.7286 7.31928L14.4162 7.64202L12.8769 7.9487L10.5843 8.4894L10.5559 8.50957L10.5884 8.54991L11.6213 8.64672L12.0628 8.67094H13.1443L15.1574 8.82023L15.6841 9.16725L16 9.59091L15.9473 9.91365L15.1372 10.3252L14.0436 10.067L11.4917 9.46179L10.6167 9.24389H10.4952V9.31654L11.2243 10.0266L12.561 11.2291L14.2339 12.7785L14.3189 13.1618L14.1043 13.4643L13.8774 13.4321L12.4071 12.3306L11.84 11.8343L10.5559 10.757H10.4709V10.8699L10.7666 11.3017L12.3301 13.6419L12.4111 14.3601L12.2978 14.5942L11.8927 14.7354L11.4471 14.6546L10.5316 13.3756L9.58788 11.9351L8.82631 10.644L8.73319 10.6965L8.28356 15.5181L8.07294 15.7642L7.58681 15.9498L7.18181 15.6432L6.96706 15.1469L7.18175 14.1664L7.441 12.8874L7.65163 11.8706L7.842 10.6077L7.95544 10.1881L7.94731 10.1598L7.85419 10.1719L6.89825 11.4792L5.44406 13.4361L4.29369 14.6627L4.01825 14.7717L3.54025 14.5255L3.58481 14.0857L3.85212 13.6944L5.444 11.6769L6.404 10.4261L7.02381 9.70391L7.01975 9.59894H6.98331L2.75437 12.3346L2.00094 12.4314L1.67687 12.1289L1.71738 11.6326L1.87131 11.4711L3.14319 10.5996L3.13925 10.6036Z"/></svg>',
+  'ChatGPT':'<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M14.949 6.53558C15.1304 5.99781 15.1931 5.42814 15.133 4.8646C15.0729 4.30106 14.8914 3.75664 14.6005 3.2677C13.7157 1.75133 11.9375 0.971329 10.2008 1.33785C9.71995 0.811199 9.10681 0.418395 8.42298 0.19889C7.73915 -0.0206147 7.00869 -0.0590926 6.30498 0.0873209C5.60126 0.233734 4.94906 0.559884 4.41388 1.03302C3.87869 1.50615 3.47936 2.1096 3.256 2.78278C2.6921 2.89663 2.15939 3.12767 1.69345 3.46048C1.22751 3.79328 0.839079 4.22017 0.554122 4.71262C-0.340253 6.22659 -0.13719 8.13625 1.05618 9.43508C0.874149 9.97258 0.810788 10.5422 0.870339 11.1057C0.929891 11.6693 1.11098 12.2138 1.4015 12.7029C2.28737 14.2198 4.06675 14.9998 5.80437 14.6327C6.18641 15.0563 6.65583 15.3948 7.18129 15.6255C7.70675 15.8563 8.27616 15.974 8.8515 15.9708C10.6316 15.9724 12.2086 14.8409 12.7524 13.172C13.3162 13.058 13.8488 12.8268 14.3147 12.494C14.7806 12.1613 15.1691 11.7345 15.4542 11.2422C16.3377 9.7309 16.1339 7.83158 14.949 6.53558ZM8.8515 14.9256C8.14097 14.9267 7.45272 14.6815 6.90743 14.233L7.00337 14.1795L10.2327 12.3441C10.3131 12.2977 10.3799 12.2315 10.4264 12.152C10.4729 12.0725 10.4977 11.9825 10.4982 11.8907V7.40764L11.8635 8.18524C11.8771 8.19207 11.8866 8.20493 11.8891 8.21988V11.9348C11.8856 13.5851 10.5276 14.9222 8.8515 14.9256ZM2.32237 12.1804C1.96604 11.5746 1.8381 10.8644 1.96106 10.1749L2.05693 10.2316L5.28956 12.067C5.36954 12.1132 5.4606 12.1376 5.55334 12.1376C5.64608 12.1376 5.73714 12.1132 5.81712 12.067L9.76593 9.82548V11.3775C9.76557 11.3856 9.76337 11.3934 9.75949 11.4005C9.75562 11.4076 9.75017 11.4137 9.74356 11.4185L6.47262 13.2759C5.01906 14.1004 3.162 13.6102 2.32237 12.1804ZM1.47181 5.25416C1.83061 4.64445 2.39695 4.1794 3.07056 3.94136V7.71921C3.06934 7.81048 3.09303 7.90041 3.13915 7.9796C3.18527 8.05879 3.25212 8.12435 3.33275 8.16942L7.26237 10.4015L5.89706 11.1791C5.88968 11.183 5.88145 11.185 5.87309 11.185C5.86474 11.185 5.85651 11.183 5.84912 11.1791L2.58456 9.32493C1.13387 8.49699 0.636372 6.66991 1.47181 5.23847V5.25416ZM12.6884 7.82001L8.74593 5.56585L10.1081 4.79139C10.1155 4.78753 10.1238 4.78551 10.1321 4.78551C10.1405 4.78551 10.1487 4.78753 10.1561 4.79139L13.4207 6.64887C13.9198 6.93245 14.3268 7.34999 14.5939 7.85274C14.8611 8.35549 14.9775 8.9227 14.9296 9.48815C14.8816 10.0536 14.6713 10.594 14.3232 11.0461C13.975 11.4983 13.5034 11.8436 12.9634 12.0418V8.26388C12.9606 8.17277 12.9338 8.08395 12.8856 8.00613C12.8373 7.92831 12.7694 7.86417 12.6884 7.82001ZM14.0473 5.80831L13.9514 5.75157L10.7252 3.90044C10.6447 3.85395 10.5531 3.82944 10.4598 3.82944C10.3665 3.82944 10.2749 3.85395 10.1944 3.90044L6.24875 6.14204V4.58997C6.24791 4.58208 6.24925 4.57412 6.25262 4.56691C6.256 4.55971 6.26129 4.55354 6.26794 4.54905L9.5325 2.69471C10.0328 2.41092 10.6049 2.27325 11.1818 2.29782C11.7587 2.32239 12.3165 2.50818 12.7901 2.83346C13.2637 3.15874 13.6334 3.61006 13.856 4.13464C14.0786 4.65921 14.145 5.23536 14.0472 5.7957V5.80831H14.0473ZM5.50381 8.55982L4.1385 7.78536C4.13167 7.7813 4.12584 7.77581 4.12141 7.76928C4.11698 7.76275 4.11407 7.75534 4.11287 7.74758V4.04216C4.11363 3.47372 4.27872 2.91724 4.58885 2.43778C4.89897 1.95832 5.34132 1.5757 5.86416 1.33465C6.387 1.09359 6.96873 1.00407 7.54134 1.07655C8.11395 1.14904 8.65377 1.38052 9.09768 1.74394L9.00175 1.79748L5.77237 3.63287C5.69201 3.67929 5.62528 3.74549 5.57876 3.82497C5.53223 3.90445 5.5075 3.99448 5.507 4.08622L5.50381 8.55988V8.55982ZM6.24556 6.98567L8.00418 5.9877L9.76593 6.98573V8.98167L8.01056 9.9797L6.24881 8.98167L6.24556 6.98567Z"/></svg>',
+  'Gemini':'<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.63248 0.26234C7.75583 -0.0689349 8.22935 -0.0636194 8.34513 0.270287L8.66864 1.2029C9.15189 2.59608 9.94277 3.86423 10.9833 4.91447C12.0239 5.96472 13.2879 6.77045 14.6825 7.27265L15.726 7.64833C16.0581 7.7679 16.0588 8.2341 15.7271 8.35464L14.6811 8.73488C13.3243 9.22807 12.092 10.009 11.0699 11.0232C10.0478 12.0375 9.26037 13.2607 8.76248 14.6079L8.35313 15.7155C8.232 16.0433 7.76562 16.0441 7.64324 15.7168L7.21578 14.5734C6.71584 13.236 5.93023 12.022 4.91296 11.015C3.89569 10.0079 2.6709 9.23157 1.32281 8.73944L0.25805 8.35077C-0.0717879 8.23034 -0.0726528 7.76731 0.256699 7.6457L1.34227 7.24478C2.68473 6.74902 3.90356 5.97111 4.9154 4.96426C5.92724 3.9574 6.70822 2.74535 7.20491 1.41101L7.63248 0.26234Z"/></svg>',
+  'Grok':'<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6.17936 9.90356L11.4986 5.95477C11.7594 5.76117 12.1321 5.83669 12.2563 6.13737C12.9103 7.7232 12.6181 9.62895 11.317 10.9374C10.0159 12.2459 8.20548 12.5329 6.55073 11.8793L4.74306 12.721C7.33578 14.5032 10.4842 14.0624 12.4516 12.0825C14.0121 10.5132 14.4954 8.37402 14.0435 6.44494L14.0476 6.44905C13.3923 3.61516 14.2087 2.48241 15.8813 0.166134C15.9208 0.111214 15.9605 0.0562936 16 0L13.7991 2.2133V2.20644L6.178 9.90494"/><path d="M5.08166 10.8633C3.22075 9.07562 3.54159 6.309 5.12945 4.71356C6.30361 3.53277 8.22733 3.05084 9.90666 3.75931L11.7102 2.92178C11.3853 2.68563 10.9689 2.43161 10.491 2.25312C8.33109 1.35928 5.7452 1.80414 3.98942 3.56847C2.30053 5.26689 1.76944 7.87836 2.68145 10.1068C3.36275 11.7722 2.24592 12.9503 1.12091 14.1393C0.722245 14.5608 0.322212 14.9823 0 15.4286L5.0803 10.8647"/></svg>',
+  'Perplexity':'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M8 0V16M3.76786 4.95303V0.854564L8 4.95303M8 4.95303L3.76786 9.23487V15.1454L8 10.9017L12.2321 15.1454V9.23487L8 4.95303ZM8 4.95303L12.2321 0.854564V4.95303M3.76786 11.0343H2V4.95303H14V11.0343H12.2321"/></svg>'
+};
+
+function getLLMIcon(llmName){return LLM_ICONS[llmName]||'';}
+function getLLMTagHTML(llmName){
+  var icon=getLLMIcon(llmName);
+  return '<span style="display:inline-flex;align-items:center;gap:5px;">'+(icon?icon:'')+llmName+'</span>';
+}
 
 // Canvas-based ring — renders reliably in Safari and html2canvas PDF export
 function ring(score,size,trackCol,fillCol){
@@ -1314,44 +1315,11 @@ function renderDashboard(){
   var isRealUrl=/^https?:\/\/.+/i.test(rawUrl.trim());
   var pageUrl=isRealUrl?rawUrl.trim():'';
 
-  // Derive a meaningful page name in order of preference:
-  // 1. Last path segment of a real URL
-  // 2. meta.pageName or meta.pageTitle if present
-  // 3. First sentence of pageClassification (usually names the page)
-  // 4. Audience string
-  var pageName='';
-
-  if(pageUrl){
-    try{
-      var urlObj=new URL(pageUrl);
-      var segs=urlObj.pathname.replace(/\/$/,'').split('/').filter(Boolean);
-      if(segs.length){
-        pageName=segs[segs.length-1].replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
-      }
-    }catch(e){}
-  }
-
-  if(!pageName&&san(d.meta.pageName)) pageName=san(d.meta.pageName);
-  if(!pageName&&san(d.meta.pageTitle)) pageName=san(d.meta.pageTitle);
-
-  // Extract from pageClassification — look for audience/topic patterns
-  if(!pageName&&d.pageClassification){
-    var cls=san(d.pageClassification).slice(0,300);
-    // "aimed at X" / "targeting X" / "for X" gives us the audience/topic
-    var m=cls.match(/(?:aimed at|targeting|designed for|built for)\s+([a-z][^,\.]{4,60}?)(?:,|\.|$)/i);
-    if(m){
-      var extracted=m[1].trim();
-      // Capitalise first letter, cap length, clean up
-      pageName=extracted.charAt(0).toUpperCase()+extracted.slice(1);
-      if(pageName.length>50)pageName=pageName.slice(0,50).replace(/\s+\S*$/,'')+'…';
-    }
-  }
-
-  if(!pageName&&san(d.meta.audience)) pageName=san(d.meta.audience).split('/')[0].trim();
-
-  // Headline = "Page Name · Page Type" or just "Page Type"
-  var headline=pageName?(pageName+' · '+pageType):pageType;
-  document.getElementById('db-page-headline').textContent=headline||'—';
+  // Headline: use the audit name entered in the prompt builder (meta.auditName),
+  // falling back to pageName/pageTitle if present, then just pageType
+  var auditName=san(d.meta.auditName||d.meta.pageName||d.meta.pageTitle||'');
+  var headline=auditName?auditName:(pageType||'—');
+  document.getElementById('db-page-headline').textContent=headline;
   // Show real URL or a clean "—" rather than LLM filler text
   document.getElementById('db-page-url').textContent=pageUrl||'—';
   document.getElementById('db-tag-stage').textContent=san(d.meta.journeyStage||d.meta.buyingPhase)||'—';
@@ -1360,7 +1328,7 @@ function renderDashboard(){
   // LLM tag — read from the selector on the paste screen
   var llmVal=document.getElementById('db-llm-select').value;
   var llmTag=document.getElementById('db-tag-llm');
-  if(llmVal){llmTag.textContent='⚙ '+llmVal;llmTag.style.display='inline-block';}
+  if(llmVal){llmTag.innerHTML=getLLMTagHTML(llmVal);llmTag.style.display='inline-flex';llmTag.style.alignItems='center';}
   else{llmTag.style.display='none';}
 
   // ── OVERVIEW — rings with visual hierarchy ────────────────
@@ -1479,21 +1447,6 @@ function renderDashboard(){
   oppHTML+='</div>';
   document.getElementById('db-tab-risks').innerHTML='<div class="risk-opp-grid">'+riskHTML+oppHTML+'</div>';
 
-  // REWRITES
-  var rw=d.rewrites;
-  var rwHTML='<div class="db-section-label">Rewrite Suggestions</div>';
-  [['Hero Headline',rw.hero],['Subheading',rw.subheading],['Primary CTA',rw.cta]].forEach(function(pair){
-    rwHTML+='<div class="rewrite-card"><div class="rewrite-label">'+pair[0]+'</div>'
-      +'<div class="rewrite-cols">'
-      +'<div class="rewrite-side rewrite-current"><div class="rewrite-side-label" style="color:var(--score-red)">CURRENT</div><div class="rewrite-text">'+san(pair[1].current)+'</div></div>'
-      +'<div class="rewrite-side rewrite-suggested"><div class="rewrite-side-label" style="color:var(--score-green)">SUGGESTED</div><div class="rewrite-text strong">'+san(pair[1].suggested)+'</div></div>'
-      +'</div><div class="rewrite-rationale">↳ '+san(pair[1].rationale)+'</div></div>';
-  });
-  rwHTML+='<div class="rewrite-card"><div class="rewrite-label">Suggested FAQs</div>';
-  rw.faqs.forEach(function(f){rwHTML+='<div class="faq-item"><div class="faq-q">Q: '+san(f.q)+'</div><div class="faq-a">A: '+san(f.a)+'</div></div>';});
-  rwHTML+='</div>';
-  document.getElementById('db-tab-rewrites').innerHTML=rwHTML;
-
   // COMPARISON — conditional tab
   var compBtn=document.getElementById('db-tab-btn-compare');
   if(d.comparison&&d.comparison.length){
@@ -1557,7 +1510,7 @@ function renderDashboard(){
 }
 
 function setDbTab(id,btn){
-  ['overview','quality','strategy','usps','risks','rewrites','compare'].forEach(function(t){
+  ['overview','quality','strategy','usps','risks','compare'].forEach(function(t){
     document.getElementById('db-tab-'+t).style.display=t===id?'block':'none';
   });
   document.querySelectorAll('.db-tab').forEach(function(b){b.classList.remove('active');});
@@ -1577,8 +1530,8 @@ async function exportPDF(){
   var contentW=pageW-margin*2;
   var pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
-  var tabs=['overview','quality','strategy','usps','risks','rewrites'];
-  var tabLabels=['Overview','Core Quality','Strategic Fit','USP Coverage','Risks & Opportunities','Rewrites'];
+  var tabs=['overview','quality','strategy','usps','risks'];
+  var tabLabels=['Overview','Core Quality','Strategic Fit','USP Coverage','Risks & Opportunities'];
   if(dbData&&dbData.comparison&&dbData.comparison.length){
     tabs.push('compare');tabLabels.push('Comparison');
   }
@@ -1591,6 +1544,31 @@ async function exportPDF(){
   var auditUrl=pageUrlEl?pageUrlEl.textContent:'';
   var auditDate=tagDate?tagDate.textContent:'';
   var auditLLM=document.getElementById('db-llm-select').value||'';
+
+  // Pre-rasterize LLM icon for PDF embedding (SVG → canvas → data URL)
+  var llmIconDataUrl='';
+  if(auditLLM&&LLM_ICONS[auditLLM]){
+    try{
+      var iconSize=20;
+      var svgStr=LLM_ICONS[auditLLM]
+        .replace(/width="14"/g,'width="'+iconSize+'"')
+        .replace(/height="14"/g,'height="'+iconSize+'"')
+        .replace(/currentColor/g,'#97999B');
+      var svgBlob=new Blob([svgStr],{type:'image/svg+xml'});
+      var svgUrl=URL.createObjectURL(svgBlob);
+      var iconImg=new Image();
+      await new Promise(function(res){
+        iconImg.onload=function(){
+          var ic=document.createElement('canvas');ic.width=iconSize*2;ic.height=iconSize*2;
+          var ictx=ic.getContext('2d');ictx.drawImage(iconImg,0,0,iconSize*2,iconSize*2);
+          llmIconDataUrl=ic.toDataURL('image/png');
+          URL.revokeObjectURL(svgUrl);res();
+        };
+        iconImg.onerror=function(){URL.revokeObjectURL(svgUrl);res();};
+        iconImg.src=svgUrl;
+      });
+    }catch(e){}
+  }
 
   // Save current active tab so we can restore it
   var activeTabEl=document.querySelector('.db-tab.active');
@@ -1616,7 +1594,7 @@ async function exportPDF(){
     await new Promise(function(r){setTimeout(r,120);});
 
     var canvas=await html2canvas(panel,{
-      scale:2,
+      scale:1.5,
       useCORS:true,
       backgroundColor:'#F2F2F0',
       logging:false,
@@ -1647,7 +1625,7 @@ async function exportPDF(){
     pdf.setFontSize(7);
     pdf.setTextColor(151,153,155);
     // Show headline (page name · page type) then URL
-    var pdfSubtitle=auditTitle+(auditUrl&&auditUrl!=='—'?' · '+auditUrl:'');
+    var pdfSubtitle=auditTitle+(auditUrl&&auditUrl!=='—'?' — '+auditUrl:'');
     pdf.text(pdfSubtitle,margin,14.5);
     // Tab name right-aligned
     pdf.setFont('helvetica','bold');
@@ -1659,7 +1637,18 @@ async function exportPDF(){
     pdf.setFontSize(7);
     pdf.setTextColor(151,153,155);
     var pdfMeta=auditDate+(auditLLM?' · '+auditLLM:'');
-    pdf.text(pdfMeta,pageW-margin,14.5,{align:'right'});
+    // Calculate right-edge x for icon placement
+    var metaTextW=pdf.getTextWidth(pdfMeta);
+    var metaX=pageW-margin;
+    pdf.text(pdfMeta,metaX,14.5,{align:'right'});
+    // Add LLM icon to the left of the text if available
+    if(llmIconDataUrl&&auditLLM){
+      var iconMm=3.5; // icon size in mm
+      var textOnlyW=pdf.getTextWidth(auditLLM);
+      var sepW=pdf.getTextWidth(' · ');
+      var iconX=metaX-textOnlyW-iconMm-0.8;
+      pdf.addImage(llmIconDataUrl,'PNG',iconX,12,iconMm,iconMm);
+    }
 
     // Thin separator
     pdf.setDrawColor(217,217,214);
@@ -1667,14 +1656,14 @@ async function exportPDF(){
     pdf.line(margin,18,pageW-margin,18);
 
     // ── Tab content (canvas image) ──────────────
-    var imgData=canvas.toDataURL('image/png');
+    var imgData=canvas.toDataURL('image/jpeg',0.82);
     var imgW=contentW;
     var rawH=(canvas.height/canvas.width)*imgW;
     var availH=pageH-22-margin; // below header, above bottom margin
 
     if(rawH<=availH){
       // Fits on one page
-      pdf.addImage(imgData,'PNG',margin,20,imgW,rawH);
+      pdf.addImage(imgData,'JPEG',margin,20,imgW,rawH);
     } else {
       // Tile across multiple pages
       var scale=imgW/canvas.width; // mm per px
@@ -1699,7 +1688,7 @@ async function exportPDF(){
         sliceCanvas.height=Math.min(sliceHpx,canvas.height-pg*sliceHpx);
         var ctx=sliceCanvas.getContext('2d');
         ctx.drawImage(canvas,0,-pg*sliceHpx);
-        pdf.addImage(sliceCanvas.toDataURL('image/png'),'PNG',margin,20,imgW,sliceCanvas.height*scale);
+        pdf.addImage(sliceCanvas.toDataURL('image/jpeg',0.82),'JPEG',margin,20,imgW,sliceCanvas.height*scale);
       }
     }
 
@@ -1712,7 +1701,10 @@ async function exportPDF(){
   setDbTab(activeTabId, document.querySelector('.db-tab'));
 
   // Save
-  var filename='UES-Audit-'+(auditUrl||'report').replace(/https?:\/\//g,'').replace(/[^a-z0-9]/gi,'-').replace(/-+/g,'-').slice(0,40)+'-'+auditDate+'.pdf';
+  var fileAuditName=(auditTitle||'UES-Audit').replace(/[^a-z0-9\s]/gi,' ').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,50);
+  var fileLLM=auditLLM?auditLLM.replace(/[^a-z0-9]/gi,'-').replace(/-+/g,'-'):'';
+  var fileDate=auditDate||'';
+  var filename=[fileAuditName,fileLLM,fileDate].filter(Boolean).join('_')+'.pdf';
   pdf.save(filename);
 
   btn.disabled=false;btn.textContent='⬇ Export PDF';
@@ -1722,7 +1714,7 @@ async function exportPDF(){
    SAMPLE DATA (v3 schema)
 ════════════════════════════════════════════════════ */
 var SAMPLE={
-  meta:{url:"https://www.example-oes.com/used-equipment/oscilloscopes",pageType:"SEO Category Page",audience:"Test Engineers / Lab Managers",trafficSource:"Organic Search (SEO)",journeyStage:"Consideration",auditDate:"2026-01-15"},
+  meta:{url:"https://www.example-oes.com/used-equipment/oscilloscopes",auditName:"Sample Audit — Used Oscilloscopes Category Page",pageType:"SEO Category Page",audience:"Test Engineers / Lab Managers",trafficSource:"Organic Search (SEO)",journeyStage:"Consideration",auditDate:"2026-01-15"},
   pageClassification:"A well-structured SEO category page targeting test engineers searching for used oscilloscopes. The page establishes clear OEM authority early and addresses quality concerns with explicit calibration and warranty statements above the fold. Content depth is strong for the Consideration stage — multiple product tiers are presented with relevant specifications and a visible trust framework. Caring Ruler positioning is largely achieved: the tone is confident without being dismissive, and buyer hesitation is proactively addressed through structured FAQs and prominent reassurance signals. Minor gaps remain in LLM retrievability and secondary persona coverage.",
   scores:{ux:8.0,seo:7.5,llmReadability:7.5,llmRetrievability:7.0,pageGoalFit:8.0,journeyStageFit:8.5,personaPrimary:8.0,personaSecondary:6.5,uspCoverage:7.5,caringRulerAlignment:7.5},
   rationale:{
@@ -1757,17 +1749,7 @@ var SAMPLE={
     {rank:3,text:"Expand sustainability section with circular economy metrics and ESG framing",benefit:"Converts an implied USP into an explicit differentiator and captures buyers with sustainability mandates."},
     {rank:4,text:"Add application-specific content blocks for 2-3 core engineering use cases",benefit:"Increases persona relevance for specialised test engineers and improves time-on-page for high-intent visitors."},
     {rank:5,text:"Surface technical support contact and response time SLAs more prominently",benefit:"Removes a common late-stage objection and reinforces OEM-backed confidence across all product tiers."}
-  ],
-  rewrites:{
-    hero:{current:"Used Oscilloscopes — Browse Our Range",suggested:"OEM-Certified Used Oscilloscopes — Calibrated, Warranted, Ready to Ship",rationale:"Leads with OEM certification to immediately differentiate from third-party resellers, then resolves the two primary quality objections in a single line. Caring Ruler balance: authoritative (Ruler) and reassuring (Caring)."},
-    subheading:{current:"Find used oscilloscopes from leading manufacturers at competitive prices.",suggested:"Every instrument calibrated to factory specification and backed by a full OEM warranty — the same standards applied to new equipment, at a fraction of the cost.",rationale:"Shifts from generic price messaging to a specific quality and trust statement that directly addresses the used-equipment skepticism. Equally relevant to engineers (quality assurance) and procurement (cost justification)."},
-    cta:{current:"Shop Oscilloscopes",suggested:"Browse Calibrated Oscilloscopes",rationale:"Adding the qualifier reinforces the quality signal at the point of action and differentiates the CTA from a generic e-commerce experience."},
-    faqs:[
-      {q:"How do I know a used oscilloscope will meet the accuracy requirements for my test programme?",a:"Every instrument is fully recalibrated to the original factory specification before shipping and includes a traceable calibration certificate. The same calibration standards used for new equipment apply — accuracy performance is guaranteed."},
-      {q:"What happens if a used oscilloscope fails within the warranty period?",a:"All instruments carry a minimum one-year OEM warranty covering parts, labour, and technical support access. Claims are handled directly by the manufacturer, not a third-party service centre."},
-      {q:"Can I get the same firmware version and option configuration as a new unit?",a:"Yes. Firmware is updated to the current supported release prior to shipping, and option configurations can be matched or upgraded to align with your existing test setup. Compatibility with SCPI, MATLAB, and Python control environments is verified before dispatch."}
-    ]
-  }
+  ]
 };
 
 /* ════════════════════════════════════════════════════
