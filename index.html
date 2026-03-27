@@ -1297,83 +1297,98 @@ document.getElementById('db-json-input').addEventListener('input',function(){
 
 function loadDashboard(){
   var raw=document.getElementById('db-json-input').value;
-  // Pre-process before parse: fix all common LLM output formatting issues
+  // Pre-process before parse
   raw=raw
-    .replace(/\u201c|\u201d/g,'"')    // smart double quotes → straight
-    .replace(/\u2018|\u2019/g,"'")    // smart single quotes → straight
-    .replace(/\u2013|\u2014/g,'-')    // en-dash / em-dash → hyphen (safe in JSON values)
-    .replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\uFFFD\uFFFC\uFFFE]/g,'') // BOM, ZWSP, invisible formatters, placeholders
-    .replace(/\r\n/g,'\n')            // normalise line endings
-    // Gemini grounding citations — [cite_start] markers and [cite: N, N] references
+    .replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u2060\u2061\u2062\u2063\uFFFD\uFFFC\uFFFE]/g,'')
+    .replace(/\u00A0/g,' ')   // non-breaking space → regular space (common from email/doc paste)
+    .replace(/\r\n/g,'\n')
     .replace(/\[cite_start\]/g,'')
     .replace(/\[cite:\s*[\d,\s]+\]/g,'')
-    // Markdown link syntax inside JSON strings: [label](url) or [label]\n(url) → url
-    // [^\"\\]] prevents the match from spanning across JSON string delimiters
     .replace(/\[([^"[\]]*)\]\s*\(([^)"]+)\)/g,'$2')
     .trim();
-  // Strip any leading/trailing non-JSON wrapper text (markdown fences, prose)
+  // Strip prose wrapper
   var start=raw.indexOf('{'), end=raw.lastIndexOf('}');
   if(start>0||end<raw.length-1){
     if(start!==-1&&end!==-1&&end>start){raw=raw.slice(start,end+1);}
   }
-  // Fix unescaped control characters inside JSON string values (e.g. literal newlines
-  // inserted by ChatGPT inside long strings). We scan character by character: inside a
-  // string (between unescaped quotes), replace bare \n \r \t with their escape sequences.
+  // Single-pass context-aware fixer.
+  // Handles in one scan: smart quotes (structurally vs as text content), en/em dashes,
+  // bare control chars, and invalid backslash escapes — all context-sensitive.
+  // Updated rule for \u201D inside strings: peek ahead — if followed by JSON structure
+  // (:,}]) treat as a closing delimiter; if followed by content, escape as text.
+  // This handles ChatGPT output that uses straight " to OPEN strings but \u201D to CLOSE them.
   try{
     var fixed='',inStr=false,esc=false;
+    var validEscChars={'"':1,'\\':1,'/':1,'b':1,'f':1,'n':1,'r':1,'t':1,'u':1};
     for(var ci=0;ci<raw.length;ci++){
-      var ch=raw[ci];
-      if(esc){fixed+=ch;esc=false;continue;}
-      if(ch==='\\'&&inStr){fixed+=ch;esc=true;continue;}
+      var ch=raw[ci],code=ch.charCodeAt(0);
+      if(esc){
+        fixed+=(validEscChars[ch]?'\\'+ch:ch); // valid: keep backslash; invalid: drop it
+        esc=false;continue;
+      }
+      if(ch==='\\'&&inStr){esc=true;continue;}
       if(ch==='"'){inStr=!inStr;fixed+=ch;continue;}
       if(inStr){
+        if(code===0x201C){fixed+='\\u201c';continue;}  // curly " inside string → escape as text
+        if(code===0x201D){
+          // Peek: if followed (after whitespace) by JSON structure, this is a closing delimiter
+          var p201=raw.slice(ci+1).replace(/^[ \t\n\r\u00A0]*/,'');
+          if(!p201||/^[,:\}\]]/.test(p201)){fixed+='"';inStr=false;}  // acts as closing "
+          else{fixed+='\\u201d';}  // inner content quotation mark → escape
+          continue;
+        }
+        if(code===0x2018){fixed+='\\u2018';continue;}  // curly ' inside string → escape
+        if(code===0x2019){fixed+='\\u2019';continue;}
         if(ch==='\n'){fixed+='\\n';continue;}
         if(ch==='\r'){fixed+='\\r';continue;}
         if(ch==='\t'){fixed+='\\t';continue;}
-        // strip other bare control characters (0x00-0x1F except handled above)
-        if(ch.charCodeAt(0)<32){continue;}
+        if(code<32){continue;}
+      } else {
+        if(code===0x201C){fixed+='"';inStr=true;continue;}  // curly open → straight open
+        if(code===0x201D){fixed+='"';continue;}  // stray curly close outside string → straight
+        if(code===0x2018||code===0x2019){fixed+="'";continue;}
+        if(code===0x2013||code===0x2014){fixed+='-';continue;}  // en/em dash → hyphen
       }
       fixed+=ch;
     }
     raw=fixed;
-  }catch(fixErr){/* if the fixer itself errors, proceed with original and let JSON.parse report */}
+  }catch(fixErr){}
   // Fix: LLMs sometimes nest pageClassification inside meta, producing a stray }
-  // Pattern: "pageClassification": "..."\n},\n"scores" → remove the stray }
-  // Use (?:[^"\\]|\\.)*  instead of [^"]* so escaped quotes inside the value don't break the match
   raw=raw.replace(/(\"pageClassification\"\s*:\s*\"(?:[^"\\]|\\.)*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
-  // Fix: LLMs sometimes omit the closing } on the last object in an array.
-  // Pattern: a string value (property value) followed directly by whitespace then ]
-  // without an intervening } — indicating the last array item was not closed.
-  // We match: ": "some value"\n  ]  →  ": "some value"\n  }\n  ]
+  // Fix: LLMs sometimes omit the closing } on the last object in an array
   raw=raw.replace(/(":\s*"[^"]*")\s*\n(\s*\])/g,'$1\n  }\n$2');
-  // Fix: invalid backslash escapes inside JSON string values.
-  // JSON only allows: \" \\ \/ \b \f \n \r \t \uXXXX
-  // LLMs sometimes emit \& \' \, \. \- \+ \= etc which are invalid and cause parse failure.
-  // We scan character-by-character, and inside strings replace \X (where X is not a valid
-  // JSON escape character) with just X, preserving the character but removing the bad backslash.
-  try{
-    var fixedEsc='',inStrE=false,escE=false;
-    var validEsc={'"':1,'\\':1,'/':1,'b':1,'f':1,'n':1,'r':1,'t':1,'u':1};
-    for(var ci=0;ci<raw.length;ci++){
-      var ch=raw[ci];
-      if(escE){
-        // We're one char after a backslash inside a string
-        if(validEsc[ch]){fixedEsc+='\\'+ch;}  // valid escape — keep backslash
-        else{fixedEsc+=ch;}                     // invalid escape — drop the backslash
-        escE=false;continue;
-      }
-      if(ch==='\\'&&inStrE){escE=true;continue;}  // don't emit yet, check next char
-      if(ch==='"'){inStrE=!inStrE;fixedEsc+=ch;continue;}
-      fixedEsc+=ch;
-    }
-    raw=fixedEsc;
-  }catch(fixEscErr){/* proceed with original if fixer errors */}
   // Step 1: try to parse. If it fails, attempt smart extraction — find the largest
   // valid JSON object in the text (handles prose wrappers from non-compliant LLMs)
   var parsed=false;
   // First try the full preprocessed string
   try{dbData=JSON.parse(raw);parsed=true;}catch(e){}
-  // If that failed, scan for every { and try to find a valid JSON object starting there
+  // Second pass: if parse failed, attempt to fix unescaped straight double quotes
+  // inside string values. LLMs sometimes write "value with "inner" quotes" without
+  // escaping the inner ones. We detect them by checking whether what follows the
+  // closing " is JSON structure (:, comma, }, ]) or actual content.
+  if(!parsed){
+    try{
+      var repaired='',ri=0,riStr=false,riEsc=false;
+      while(ri<raw.length){
+        var rc=raw[ri];
+        if(riEsc){repaired+=rc;riEsc=false;ri++;continue;}
+        if(rc==='\\'&&riStr){repaired+=rc;riEsc=true;ri++;continue;}
+        if(rc==='"'){
+          if(!riStr){riStr=true;repaired+=rc;}
+          else{
+            // Peek ahead: is this a real string closer?
+            var peek=raw.slice(ri+1).replace(/^[ \t\n\r\u00A0]*/,'');
+            if(!peek||/^[,:\}\]]/.test(peek)){riStr=false;repaired+=rc;}
+            else{repaired+='\\"';} // inner quote — escape it
+          }
+          ri++;continue;
+        }
+        repaired+=rc;ri++;
+      }
+      dbData=JSON.parse(repaired);parsed=true;
+    }catch(e2){}
+  }
+  // Third pass: scan for every { and try to find a valid JSON object starting there
   if(!parsed){
     var candidates=[];
     for(var si=0;si<raw.length;si++){
@@ -1396,7 +1411,24 @@ function loadDashboard(){
     }
   }
   if(!parsed){
-    showDbError('⚠ Could not find valid JSON in the pasted text.\n\nIf the LLM responded with a written summary instead of JSON, ask it to try again and specifically request JSON output. The dashboard can only render structured JSON data.\n\nIf you already have JSON but see a parse error, common causes include: smart quote characters, Gemini citation markers [cite: N], or markdown code fences — all of which are stripped automatically on paste.');
+    // Build a diagnostic message to help identify the actual problem
+    var diagMsg='⚠ Could not parse JSON.\n\n';
+    try{
+      JSON.parse(raw);
+    }catch(diagE){
+      var diagPos=0;
+      var posMatch=diagE.message.match(/position (\d+)/)||diagE.message.match(/char (\d+)\)/);
+      if(posMatch) diagPos=parseInt(posMatch[1]);
+      var diagCtx=raw.slice(Math.max(0,diagPos-40),diagPos+40);
+      var diagChar=raw[diagPos]?'U+'+raw.charCodeAt(diagPos).toString(16).toUpperCase().padStart(4,'0')+' ('+JSON.stringify(raw[diagPos])+')':'end of input';
+      diagMsg+='Parse error: '+diagE.message+'\n';
+      diagMsg+='Character at failure: '+diagChar+'\n';
+      diagMsg+='Context: ...'+diagCtx+'...\n\n';
+    }
+    diagMsg+='Input length: '+raw.length+' chars. ';
+    diagMsg+='Starts with: '+JSON.stringify(raw.slice(0,30))+'\n';
+    diagMsg+='Ends with: '+JSON.stringify(raw.slice(-30));
+    showDbError(diagMsg);
     return;
   }
   // Step 2: render (separate catch so parse errors and render errors give different messages)
@@ -1407,8 +1439,12 @@ function loadDashboard(){
   }
 }
 function showDbError(msg){
-  document.getElementById('db-error').textContent=msg;
-  document.getElementById('db-error').style.display='block';
+  var el=document.getElementById('db-error');
+  el.style.fontFamily='monospace';
+  el.style.fontSize='10.5px';
+  el.style.whiteSpace='pre-wrap';
+  el.textContent=msg;
+  el.style.display='block';
   document.getElementById('db-json-input').classList.add('has-error');
 }
 function loadSample(){dbData=SAMPLE;renderDashboard();}
