@@ -5,7 +5,7 @@ export default async function middleware(request) {
     const [, credentials] = basicAuth.split(' ');
     const [user, password] = atob(credentials).split(':');
     if (user === 'admin' && password === process.env.SITE_PASSWORD) {
-      return; // ← this tells Vercel to go ahead and serve your HTML file normally
+      return;
     }
   }
 
