@@ -1339,7 +1339,8 @@ function loadDashboard(){
   }catch(fixErr){/* if the fixer itself errors, proceed with original and let JSON.parse report */}
   // Fix: LLMs sometimes nest pageClassification inside meta, producing a stray }
   // Pattern: "pageClassification": "..."\n},\n"scores" → remove the stray }
-  raw=raw.replace(/(\"pageClassification\"\s*:\s*\"[^\"]*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
+  // Use (?:[^"\\]|\\.)*  instead of [^"]* so escaped quotes inside the value don't break the match
+  raw=raw.replace(/(\"pageClassification\"\s*:\s*\"(?:[^"\\]|\\.)*\")\s*\}\s*,(\s*\"scores\")/g,'$1,$2');
   // Fix: LLMs sometimes omit the closing } on the last object in an array.
   // Pattern: a string value (property value) followed directly by whitespace then ]
   // without an intervening } — indicating the last array item was not closed.
@@ -1463,6 +1464,10 @@ function scoreBar(label,score,weight,rationale){
 
 function renderDashboard(){
   var d=dbData,s=d.scores,r=d.rationale;
+  if(!s||!r){
+    showDbError('⚠ Dashboard render error: the parsed JSON is missing required top-level fields (scores, rationale). This usually means the JSON was extracted from the wrong part of the LLM response. Try pasting the full response again, or check that your LLM returned a complete audit object.');
+    return;
+  }
 
   // ── Safe helpers ──────────────────────────────────────────
   function n(v){return(v!==undefined&&v!==null&&!isNaN(Number(v)))?Number(v):0;}
