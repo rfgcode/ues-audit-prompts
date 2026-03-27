@@ -1346,6 +1346,28 @@ function loadDashboard(){
   // without an intervening } — indicating the last array item was not closed.
   // We match: ": "some value"\n  ]  →  ": "some value"\n  }\n  ]
   raw=raw.replace(/(":\s*"[^"]*")\s*\n(\s*\])/g,'$1\n  }\n$2');
+  // Fix: invalid backslash escapes inside JSON string values.
+  // JSON only allows: \" \\ \/ \b \f \n \r \t \uXXXX
+  // LLMs sometimes emit \& \' \, \. \- \+ \= etc which are invalid and cause parse failure.
+  // We scan character-by-character, and inside strings replace \X (where X is not a valid
+  // JSON escape character) with just X, preserving the character but removing the bad backslash.
+  try{
+    var fixedEsc='',inStrE=false,escE=false;
+    var validEsc={'"':1,'\\':1,'/':1,'b':1,'f':1,'n':1,'r':1,'t':1,'u':1};
+    for(var ci=0;ci<raw.length;ci++){
+      var ch=raw[ci];
+      if(escE){
+        // We're one char after a backslash inside a string
+        if(validEsc[ch]){fixedEsc+='\\'+ch;}  // valid escape — keep backslash
+        else{fixedEsc+=ch;}                     // invalid escape — drop the backslash
+        escE=false;continue;
+      }
+      if(ch==='\\'&&inStrE){escE=true;continue;}  // don't emit yet, check next char
+      if(ch==='"'){inStrE=!inStrE;fixedEsc+=ch;continue;}
+      fixedEsc+=ch;
+    }
+    raw=fixedEsc;
+  }catch(fixEscErr){/* proceed with original if fixer errors */}
   // Step 1: try to parse. If it fails, attempt smart extraction — find the largest
   // valid JSON object in the text (handles prose wrappers from non-compliant LLMs)
   var parsed=false;
