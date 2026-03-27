@@ -4,7 +4,7 @@ export default async function middleware(request) {
   if (basicAuth) {
     const [, credentials] = basicAuth.split(' ');
     const [user, password] = atob(credentials).split(':');
-    if (user === 'admin' && password === process.env.SITE_PASSWORD) {
+    if (user === 'ues' && password === process.env.SITE_PASSWORD) {
       return;
     }
   }
